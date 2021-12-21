@@ -172,6 +172,9 @@ class Remind(SlashCommand, name="remind"):
         async def wrapper():
             after_1h = dt.utcnow() + td(hours=1)
 
+            if not self.path().get().key():
+                return
+
             reminders = self.path().order_by_child('timestamp').end_at(after_1h.timestamp()).get().each()
 
             for reminder in reminders:
