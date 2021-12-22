@@ -122,10 +122,8 @@ class GuildUpdater(BotTask):
             response = response.json()
 
         # We grab the prefix and additionally add it to a prefix path for faster lookups
-        # We only update the prefix when the guild is new as you can't change guild prefixes
-        if update_prefix:
-            prefix = response['prefix']
-            self.prefix_path().child(prefix).set(guild_name)
+        prefix = response['prefix']
+        self.prefix_path().child(prefix).set(guild_name)
 
         # Now we get the members and return a number for change between this and last iteration
         members = map(lambda m: GuildMember.from_data(m).to_dict_item(), response['members'])
