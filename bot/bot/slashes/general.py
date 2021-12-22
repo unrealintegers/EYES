@@ -8,7 +8,7 @@ from discord import Member
 from ..bot import EYESBot, SlashCommand
 
 
-class Impersonation(SlashCommand, name="impersonate"):
+class ImpersonateCommand(SlashCommand, name="impersonate"):
     def __init__(self, bot: EYESBot, guild_ids: List[int]):
         super().__init__(bot, guild_ids)
 

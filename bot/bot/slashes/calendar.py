@@ -68,7 +68,7 @@ class Reminder:
             self.repeats -= 1
 
 
-class Remind(SlashCommand, name="remind"):
+class RemindCommand(SlashCommand, name="remind"):
     def __init__(self, bot: EYESBot, guild_ids: List[int]):
         super().__init__(bot, guild_ids)
 

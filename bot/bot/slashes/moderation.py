@@ -7,7 +7,7 @@ from discord import File
 from ..bot import EYESBot, SlashCommand
 
 
-class Evaluate(SlashCommand, name="evaluate"):
+class EvaluateCommand(SlashCommand, name="evaluate"):
     def __init__(self, bot: EYESBot, guild_ids: List[int]):
         super().__init__(bot, guild_ids)
 
