@@ -1,5 +1,8 @@
 git+https://github.com/Pycord-Development/pycord.git
 pyrebase
+requests
+
 aiocron
+python-dateutil
 dateparser
 pytz

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from typing import List
 
@@ -26,12 +27,23 @@ class SlashCommand:
         self.bot.bot.slash_command(guild_ids=self.guild_ids, name=name)(coro)
 
 
+class BotTask:
+    def __init__(self, bot: EYESBot):
+        self.bot = bot
+
+
 class EYESBot:
     def __init__(self, prefix: str):
         self.bot = commands.Bot(command_prefix=prefix,
                                 intents=discord.Intents.all())
 
         self.bot.remove_command('help')
+
+        self.logger = logging.Logger('main')
+        self.logger.setLevel(logging.DEBUG)
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("%(message)s", "%m/%d %H:%M:%S"))
+        self.logger.addHandler(handler)
 
         # Using env variable as Heroku expects
         firebase = pyrebase.initialize_app(json.loads(os.getenv("DB_CREDS")))
@@ -48,14 +60,20 @@ class EYESBot:
         if cmd_dict:
             print(f"Unregistered Commands: {cmd_dict}")
 
+    async def add_tasks(self):
+        for sub_cls in BotTask.__subclasses__():
+            sub_cls(self)
+
     def run(self):
         self.bot.run(os.getenv("TOKEN"))
         pass
 
     async def on_ready(self):
-        print("Connected")
+        self.logger.info("Connected")
 
         await self.instantiate_commands({})  # TODO: Setup command dict in DB
         await self.bot.register_commands()
 
-        print("Synced")
+        await self.add_tasks()
+
+        self.logger.info("Synced")
