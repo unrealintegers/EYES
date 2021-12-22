@@ -17,6 +17,8 @@ class GuildListUpdater(BotTask):
     def __init__(self, bot: EYESBot):
         super().__init__(bot)
 
+        # Do one update at the start
+        self.update().call_func()
         self.update().start()
 
     def path(self):
