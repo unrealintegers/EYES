@@ -1,8 +1,11 @@
 git+https://github.com/Pycord-Development/pycord.git
 pyrebase
 requests
+aiohttp[speedups]
 
 aiocron
 python-dateutil
 dateparser
 pytz
+
+fuzzywuzzy[speedup]

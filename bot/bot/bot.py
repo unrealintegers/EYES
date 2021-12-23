@@ -9,6 +9,8 @@ import discord
 import pyrebase
 from discord.ext import commands
 
+from .utils.wynn import GuildMemberManager, GuildPrefixManager, PlayerManager
+
 
 class SlashCommand:
     def __init__(self, bot: EYESBot, guild_ids: List[int]):
@@ -36,14 +38,18 @@ class EYESBot:
     def __init__(self, prefix: str):
         self.bot = commands.Bot(command_prefix=prefix,
                                 intents=discord.Intents.all())
-
         self.bot.remove_command('help')
 
+        # Setup logging
         self.logger = logging.Logger('main')
         self.logger.setLevel(logging.DEBUG)
         handler = logging.StreamHandler()
         handler.setFormatter(logging.Formatter("%(message)s", "%m/%d %H:%M:%S"))
         self.logger.addHandler(handler)
+
+        self.guilds = GuildMemberManager(self)
+        self.prefixes = GuildPrefixManager(self)
+        self.players = PlayerManager()
 
         # Using env variable as Heroku expects
         firebase = pyrebase.initialize_app(json.loads(os.getenv("DB_CREDS")))
@@ -66,10 +72,11 @@ class EYESBot:
 
     def run(self):
         self.bot.run(os.getenv("TOKEN"))
-        pass
 
     async def on_ready(self):
         self.logger.info("Connected")
+
+        self.players.run()
 
         await self.instantiate_commands({})  # TODO: Setup command dict in DB
         await self.bot.register_commands()
