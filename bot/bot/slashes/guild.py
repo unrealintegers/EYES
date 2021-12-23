@@ -32,15 +32,18 @@ class GuildCommand(SlashCommand, name="guild"):
         if len(ctx.value) == 0:
             return []
 
-        # We first try and do a case-insensitive guild prefix match if len < 4
+        # We first try and do a case-insensitive guild prefix match if len <= 4
         # by generating all possible combinations of upper/lowercase letters in the prefix
-        try:
-            possible_letters = map(generate_letters, ctx.value)
-        except ValueError:
-            prefix_match = []
+        if len(ctx.value) <= 4:
+            try:
+                possible_letters = map(generate_letters, ctx.value)
+            except ValueError:
+                prefix_match = []
+            else:
+                possible_words = map(''.join, product(*possible_letters))
+                prefix_match = filter(None, map(self.bot.prefixes.p2g.get, possible_words))
         else:
-            possible_words = map(''.join, product(*possible_letters))
-            prefix_match = filter(None, map(self.bot.prefixes.p2g.get, possible_words))
+            prefix_match = []
 
         results = process.extract(ctx.value, self.bot.prefixes.g2p.keys(), scorer=fuzz.partial_ratio, limit=25)
         guilds = list(zip(*results))[0]
