@@ -51,6 +51,8 @@ class EYESBot:
         self.prefixes = GuildPrefixManager(self)
         self.players = PlayerManager()
 
+        self.tasks: List[BotTask] = []
+
         # Using env variable as Heroku expects
         firebase = pyrebase.initialize_app(json.loads(os.getenv("DB_CREDS")))
         self.db = firebase.database()
@@ -68,7 +70,7 @@ class EYESBot:
 
     async def add_tasks(self):
         for sub_cls in BotTask.__subclasses__():
-            sub_cls(self)
+            self.tasks.append(sub_cls(self))
 
     def run(self):
         self.bot.run(os.getenv("TOKEN"))
