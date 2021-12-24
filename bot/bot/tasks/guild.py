@@ -5,6 +5,7 @@ from datetime import timedelta as td
 from typing import Optional
 
 import aiocron
+import aiohttp
 import requests
 from pytz import utc
 
@@ -74,7 +75,7 @@ class GuildUpdater(BotTask):
             if dt.utcnow().timestamp() > self.pq[0][0]:
                 # Gets the first element and updates it
                 _, guild_name = heapq.heappop(self.pq)
-                next_update = self.update_guild(guild_name)
+                next_update = await self.update_guild(guild_name)
 
                 # Re-adds it back to the queue with the scheduled next update
                 heapq.heappush(self.pq, (next_update, guild_name))
@@ -110,18 +111,18 @@ class GuildUpdater(BotTask):
         interval = max(min(interval, MAX_INTERVAL), MIN_INTERVAL)
         return interval
 
-    def update_guild(self, guild_name, update_prefix=False) -> Optional[float]:
+    async def update_guild(self, guild_name) -> Optional[float]:
         """Fetches 1 guild from the API and updates it."""
         self.bot.logger.info(f"Updating Guild {guild_name}.")
 
         url = f"https://api.wynncraft.com/public_api.php?action=guildStats&command={guild_name}"
-        response = requests.get(url)
-
-        if not response.ok:
-            self.bot.logger.error(f"Failed to fetch from {url}.")
-            return
-        else:
-            response = response.json()
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                if not response.ok:
+                    self.bot.logger.error(f"Failed to fetch from {url}.")
+                    return
+                else:
+                    response = await response.json()
 
         # We grab the prefix and additionally add it to a prefix path for faster lookups
         prefix = response['prefix']
