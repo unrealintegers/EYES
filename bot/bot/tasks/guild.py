@@ -66,6 +66,9 @@ class GuildUpdater(BotTask):
     def guild_path(self):
         return self.bot.db.child('wynncraft').child('guilds')
 
+    def deleted_path(self):
+        return self.bot.db.child('wynncraft').child('deleted_guilds')
+
     def prefix_path(self):
         return self.bot.db.child('wynncraft').child('prefixes')
 
@@ -75,10 +78,9 @@ class GuildUpdater(BotTask):
             if dt.utcnow().timestamp() > self.pq[0][0]:
                 # Gets the first element and updates it
                 _, guild_name = heapq.heappop(self.pq)
-                next_update = await self.update_guild(guild_name)
-
-                # Re-adds it back to the queue with the scheduled next update
-                heapq.heappush(self.pq, (next_update, guild_name))
+                if next_update := await self.update_guild(guild_name):
+                    # Re-adds it back to the queue with the scheduled next update
+                    heapq.heappush(self.pq, (next_update, guild_name))
 
         # 1 request per 3s
         await asyncio.sleep(3)
@@ -123,6 +125,14 @@ class GuildUpdater(BotTask):
                     return
                 else:
                     response = await response.json()
+
+        # Check for error: guild not found
+        if response.get("error") == "Guild not found":
+            # The guild was deleted, so we add it to deleted_guilds
+            last_info = self.guild_path().child(guild_name).get().val()
+            last_info['deleted'] = dt.utcnow().timestamp()
+            self.deleted_path().child(guild_name).set(last_info)
+            return
 
         # We grab the prefix and additionally add it to a prefix path for faster lookups
         prefix = response['prefix']
