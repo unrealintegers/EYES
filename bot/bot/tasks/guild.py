@@ -75,7 +75,7 @@ class GuildUpdater(BotTask):
     async def next(self):
         if self.pq:  # is not empty
             # We check that it is in fact time to update the smallest item
-            if dt.utcnow().timestamp() > self.pq[0][0]:
+            if dt.now().timestamp() > self.pq[0][0]:
                 # Gets the first element and updates it
                 _, guild_name = heapq.heappop(self.pq)
                 if next_update := await self.update_guild(guild_name):
@@ -130,7 +130,7 @@ class GuildUpdater(BotTask):
         if response.get("error") == "Guild not found":
             # The guild was deleted, so we add it to deleted_guilds
             last_info = self.guild_path().child(guild_name).get().val()
-            last_info['deleted'] = dt.utcnow().timestamp()
+            last_info['deleted'] = dt.now().timestamp()
             self.deleted_path().child(guild_name).set(last_info)
             return
 
@@ -154,7 +154,7 @@ class GuildUpdater(BotTask):
 
         interval = self.guild_path().child(guild_name).child('interval').get().val()
         next_interval = self.calc_next_interval(td(seconds=interval), no_diff_days, num_changes)
-        next_update = dt.utcnow() + next_interval
+        next_update = dt.now() + next_interval
 
         self.guild_path().child(guild_name).update({
             "interval": next_interval.total_seconds(),
