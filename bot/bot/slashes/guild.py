@@ -1,11 +1,12 @@
+from collections import OrderedDict
 from itertools import product
-from typing import List
+from typing import List, Dict
 
 from discord import ApplicationContext, Option, OptionChoice, Embed
 from fuzzywuzzy import fuzz, process
 
 from ..bot import EYESBot, SlashCommand
-from ..utils.wynn import RANKS
+
 
 class GuildCommand(SlashCommand, name="guild"):
     def __init__(self, bot: EYESBot, guild_ids: List[int]):
@@ -55,36 +56,76 @@ class GuildCommand(SlashCommand, name="guild"):
             self, ctx: ApplicationContext,
             guild: Option(str, "guild to look up")
     ):
-        # Store a copy of the original argument
-        _guild = guild
-        if ' | ' in guild:
-            guild = guild.partition(' | ')[2]
-        elif guild not in self.bot.prefixes.g2p:
-            guild = self.bot.prefixes.p2g.get(guild)
+        def parse_guild(guild_name):
+            if ' | ' in guild_name:
+                return guild_name.partition(' | ')[2]
+            elif guild_name in self.bot.prefixes.g2p:
+                return guild_name
+            else:
+                return self.bot.prefixes.p2g.get(guild_name)
 
-        if not guild:
-            await ctx.respond(f"Guild `{_guild}` not found.")
+        # Check if this is a multi-guild search
+        if ',' in guild:
+            guilds = map(lambda x: x.strip(), guild.split(','))
+        else:
+            guilds = [guild]
+
+        # Put everything through the parse function
+        parsed_guilds = {gu: parse_guild(gu) for gu in guilds}
+        unparsed_guilds = [k for k, v in parsed_guilds.items() if v is None]
+
+        # Error handling
+        if len(unparsed_guilds) == 1:
+            await ctx.respond(f"Guild {unparsed_guilds[0]} not found.")
+            return
+        elif len(unparsed_guilds) > 1:
+            await ctx.respond(f"Guilds {', '.join(unparsed_guilds)} not found.")
             return
 
-        # We construct sets for intersection for better time complexity
-        members = self.bot.guilds.get(guild)
-        online_players = self.bot.players.players
-        online_members = set(m.name for m in members) & set(online_players)
-        online_guildmembers = filter(lambda m: m.name in online_members, members)
+        await ctx.defer()
 
-        # This counts how many of each rank are online
-        ranks = [0] * 6
-        for member in online_guildmembers:
-            member_rank = member.rank
-            ranks[member_rank] += 1
-        total = sum(ranks)
-        # Convert it to a (rank_name, online_count) list
-        ranks = zip(map(lambda r: r.title(), RANKS), ranks)
-        # and join each one to make a string
-        rank_strs = map(lambda x: f"{x[0]}: {x[1]}", ranks)
-        total_str = f"__Total__: {total}"
+        # Loop through all the guilds in the search
+        ranks: Dict[str, List] = {}
+        key_ranks: Dict[str, OrderedDict] = {}
+        for guild in parsed_guilds.values():
+            # We construct sets for intersection for better time complexity
+            members = self.bot.guilds.get(guild)
+            online_players = self.bot.players.players
+            online_members = set(m.name for m in members) & set(online_players)
+            online_guildmembers = filter(lambda m: m.name in online_members, members)
 
-        # Build an embed
-        embed = Embed(title=guild, colour=0xb224ff)
-        embed.add_field(name='Online', value='\n'.join([*rank_strs, total_str]), inline=False)
-        await ctx.respond(embed=embed)
+            # This counts how many of each rank are online
+            ranks[guild] = [0] * 6
+            for member in online_guildmembers:
+                member_rank = member.rank
+                ranks[guild][member_rank] += 1
+
+            key_ranks[guild] = OrderedDict((("Chiefs", ranks[guild][4] + ranks[guild][5]),
+                                            ("Strategists", ranks[guild][3]),
+                                            ("Captains", ranks[guild][2]),
+                                            ("Total", sum(ranks[guild]))))
+
+        # If len == 1, we can use a simple embed field
+        if len(parsed_guilds) == 1:
+            # Take the key ranks and join strings
+            rank_strs = map(lambda x: ': '.join(map(str, x)), key_ranks[guild].items())
+            # We want ranks to be in order of high -> low
+
+            # Build an embed
+            embed = Embed(title=guild, colour=0xb224ff)
+            embed.add_field(name='Online', value='\n'.join(rank_strs), inline=False)
+            await ctx.respond(embed=embed)
+
+        # Otherwise, we use codeblocks and make a table
+        else:
+            # Code block formatting
+            start_str = "```asciidoc\n Tag  Chief  Strat  Captn  Total\n---------------------------------\n"
+            end_str = "\n```"
+
+            # Format it specificallywith the tag
+            fmt = "{:>4} " + " {:^5} " * 4
+            guild_strs = map(lambda gu: fmt.format(self.bot.prefixes.g2p[gu], *key_ranks[gu].values()),
+                             key_ranks.keys())
+
+            final_str = start_str + '\n'.join(guild_strs) + end_str
+            await ctx.respond(final_str)
