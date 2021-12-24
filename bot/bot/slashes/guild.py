@@ -1,11 +1,11 @@
 from itertools import product
 from typing import List
 
-from discord import ApplicationContext, Option, OptionChoice
+from discord import ApplicationContext, Option, OptionChoice, Embed
 from fuzzywuzzy import fuzz, process
 
 from ..bot import EYESBot, SlashCommand
-
+from ..utils.wynn import RANKS
 
 class GuildCommand(SlashCommand, name="guild"):
     def __init__(self, bot: EYESBot, guild_ids: List[int]):
@@ -66,8 +66,25 @@ class GuildCommand(SlashCommand, name="guild"):
             await ctx.respond(f"Guild `{_guild}` not found.")
             return
 
+        # We construct sets for intersection for better time complexity
         members = self.bot.guilds.get(guild)
-        member_names = set(m.name for m in members)
-        online_players = set(self.bot.players.players)
-        online_members = member_names & online_players
-        await ctx.respond('\n'.join(online_members))
+        online_players = self.bot.players.players
+        online_members = set(m.name for m in members) & set(online_players)
+        online_guildmembers = filter(lambda m: m.name in online_members, members)
+
+        # This counts how many of each rank are online
+        ranks = [0] * 6
+        for member in online_guildmembers:
+            member_rank = member.rank
+            ranks[member_rank] += 1
+        total = sum(ranks)
+        # Convert it to a (rank_name, online_count) list
+        ranks = zip(map(lambda r: r.title(), RANKS), ranks)
+        # and join each one to make a string
+        rank_strs = map(lambda x: f"{x[0]}: {x[1]}", ranks)
+        total_str = f"__Total__: {total}"
+
+        # Build an embed
+        embed = Embed(title=guild, colour=0xb224ff)
+        embed.add_field(name='Online', value='\n'.join([*rank_strs, total_str]), inline=False)
+        await ctx.respond(embed=embed)
