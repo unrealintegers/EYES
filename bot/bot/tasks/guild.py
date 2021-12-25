@@ -82,8 +82,8 @@ class GuildUpdater(BotTask):
                     # Re-adds it back to the queue with the scheduled next update
                     heapq.heappush(self.pq, (next_update, guild_name))
 
-        # 1 request per 3s
-        await asyncio.sleep(3)
+        # 1 request per 5s
+        await asyncio.sleep(5)
         asyncio.create_task(self.next())
 
     def build_pq(self):
