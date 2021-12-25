@@ -1,5 +1,5 @@
 git+https://github.com/Pycord-Development/pycord.git
-pyrebase
+pyrebase4
 requests
 aiohttp[speedups]
 
