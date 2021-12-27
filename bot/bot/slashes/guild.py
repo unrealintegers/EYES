@@ -38,10 +38,10 @@ class GuildCommand(SlashCommand, name="guild"):
         if len(ctx.value) <= 4:
             try:
                 possible_letters = map(generate_letters, ctx.value)
+                possible_words = map(''.join, product(*possible_letters))
             except ValueError:
                 prefix_match = []
             else:
-                possible_words = map(''.join, product(*possible_letters))
                 prefix_match = filter(None, map(self.bot.prefixes.p2g.get, possible_words))
         else:
             prefix_match = []
