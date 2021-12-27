@@ -64,11 +64,19 @@ class GuildCommand(SlashCommand, name="guild"):
             else:
                 return self.bot.prefixes.p2g.get(guild_name)
 
-        # Check if this is a multi-guild search
-        if ',' in guild:
-            guilds = map(lambda x: x.strip(), guild.split(','))
+        # guildgroup = start with $
+        if guild[0] == '$':
+            groups = self.bot.db.child("config").child("global").child("guildgroups").get().val()
+            guilds = groups.get(guild[1:])
+            if guilds is None:
+                await ctx.respond(f"Guild group `{guild[1:]}` not found.")
+                return
         else:
-            guilds = [guild]
+            # Check if this is a multi-guild search
+            if ',' in guild:
+                guilds = map(lambda x: x.strip(), guild.split(','))
+            else:
+                guilds = [guild]
 
         # Put everything through the parse function
         parsed_guilds = {gu: parse_guild(gu) for gu in guilds}
@@ -76,10 +84,10 @@ class GuildCommand(SlashCommand, name="guild"):
 
         # Error handling
         if len(unparsed_guilds) == 1:
-            await ctx.respond(f"Guild {unparsed_guilds[0]} not found.")
+            await ctx.respond(f"Guild `{unparsed_guilds[0]}` not found.")
             return
         elif len(unparsed_guilds) > 1:
-            await ctx.respond(f"Guilds {', '.join(unparsed_guilds)} not found.")
+            await ctx.respond(f"Guilds `{', '.join(unparsed_guilds)}` not found.")
             return
 
         await ctx.defer()
