@@ -128,8 +128,9 @@ class GuildUpdater(BotTask):
 
         # Check for error: guild not found
         if response.get("error") == "Guild not found":
-            # The guild was deleted, so we add it to deleted_guilds
+            # The guild was deleted, so we add it to deleted_guilds and remove it from guilds
             last_info = self.guild_path().child(guild_name).get().val()
+            self.guild_path().child(guild_name).set([])
             last_info['deleted'] = dt.now().timestamp()
             self.deleted_path().child(guild_name).set(last_info)
             return
