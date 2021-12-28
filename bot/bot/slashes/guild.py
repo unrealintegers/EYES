@@ -122,7 +122,7 @@ class GuildCommand(SlashCommand, name="guild"):
             # Build an embed
             embed = Embed(title=guild, colour=0xb224ff)
             embed.add_field(name='Online', value='\n'.join(rank_strs), inline=False)
-            await ctx.respond(embed=embed)
+            await ctx.send_followup(embed=embed)
 
         # Otherwise, we use codeblocks and make a table
         else:
@@ -136,4 +136,4 @@ class GuildCommand(SlashCommand, name="guild"):
                              key_ranks.keys())
 
             final_str = start_str + '\n'.join(guild_strs) + end_str
-            await ctx.respond(final_str)
+            await ctx.send_followup(final_str)

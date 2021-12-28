@@ -143,8 +143,8 @@ class RemindCommand(SlashCommand, name="remind"):
             interval = delta
 
         if repeat and interval < timedelta(hours=1, minutes=59):  # fp error
-            await ctx.respond("Repeat interval has to be longer than 2h!",
-                              ephemeral=True)
+            await ctx.send_followup("Repeat interval has to be longer than 2h!",
+                                    ephemeral=True)
             return
 
         reminder = Reminder(discord_id=ctx.user.id,
@@ -160,7 +160,7 @@ class RemindCommand(SlashCommand, name="remind"):
         if delta < timedelta(hours=1):
             await self.remind(reminder_id, delta)
 
-        response = await ctx.respond(
+        response = await ctx.send_followup(
             f"Your reminder for **{message}** has been set for "
             f"<t:{int(remind_time.timestamp())}>."
         )
