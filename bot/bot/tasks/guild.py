@@ -26,7 +26,7 @@ class GuildListUpdater(BotTask):
         return self.bot.db.child('wynncraft').child('guilds')
 
     def update(self):
-        @aiocron.crontab("0 * * * *", start=False, tz=utc)
+        @aiocron.crontab("0 */3 * * *", start=False, tz=utc)
         async def wrapper():
             response = requests.get("https://api.wynncraft.com/public_api.php?action=guildList")
 
