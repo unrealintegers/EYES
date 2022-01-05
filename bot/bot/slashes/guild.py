@@ -6,6 +6,7 @@ from discord import ApplicationContext, Option, OptionChoice, Embed
 from fuzzywuzzy import fuzz, process
 
 from ..bot import EYESBot, SlashCommand
+from ..managers import ConfigManager
 
 
 class GuildCommand(SlashCommand, name="guild"):
@@ -16,10 +17,10 @@ class GuildCommand(SlashCommand, name="guild"):
             "guild", "No Description", guild_ids=self.guild_ids
         )
 
-        info = self.group.command()(self.info)
-        info.options[0].autocomplete = self.info_autocompleter
+        info = self.group.command()(self.players)
+        info.options[0].autocomplete = self.players_autocompleter
 
-    async def info_autocompleter(self, ctx: ApplicationContext):
+    async def players_autocompleter(self, ctx: ApplicationContext):
         def generate_letters(letter):
             """A simple function to generate the upper and lower case variants of a letter, in order."""
             if len(letter) != 1 or not letter.isalpha():
@@ -52,7 +53,7 @@ class GuildCommand(SlashCommand, name="guild"):
         formatted_guilds = [OptionChoice(f"{self.bot.prefixes.g2p[gu]} | {gu}", gu) for gu in guilds]
         return formatted_guilds
 
-    async def info(
+    async def players(
             self, ctx: ApplicationContext,
             guild: Option(str, "guild to look up")
     ):
@@ -64,14 +65,10 @@ class GuildCommand(SlashCommand, name="guild"):
             else:
                 return self.bot.prefixes.p2g.get(guild_name)
 
-        # guildgroup = start with $
-        if guild[0] == '$':
-            groups = self.bot.db.child("config").child("global").child("guildgroups").get().val()
-            guilds = groups.get(guild[1:])
-            if guilds is None:
-                await ctx.respond(f"Guild group `{guild[1:]}` not found.")
-                return
-        else:
+        guilds = ConfigManager.get("guildgroups", guild)
+
+        # Not found => Not a group
+        if guilds is None:
             # Check if this is a multi-guild search
             if ',' in guild:
                 guilds = map(lambda x: x.strip(), guild.split(','))
@@ -84,7 +81,7 @@ class GuildCommand(SlashCommand, name="guild"):
 
         # Error handling
         if len(unparsed_guilds) == 1:
-            await ctx.respond(f"Guild `{unparsed_guilds[0]}` not found.")
+            await ctx.respond(f"Guild or group `{unparsed_guilds[0]}` not found.")
             return
         elif len(unparsed_guilds) > 1:
             await ctx.respond(f"Guilds `{', '.join(unparsed_guilds)}` not found.")

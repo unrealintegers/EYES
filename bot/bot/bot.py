@@ -10,7 +10,7 @@ import pyrebase
 from discord.ext import commands
 
 from .utils.wynn import GuildMemberManager, GuildPrefixManager, PlayerManager
-
+from .managers import ConfigManager
 
 class SlashCommand:
     def __init__(self, bot: EYESBot, guild_ids: List[int]):
@@ -56,6 +56,8 @@ class EYESBot:
         # Using env variable as Heroku expects
         firebase = pyrebase.initialize_app(json.loads(os.getenv("DB_CREDS")))
         self.db = firebase.database()
+
+        ConfigManager.init_db(self.db)
 
         self.bot.add_listener(self.on_ready)
 
