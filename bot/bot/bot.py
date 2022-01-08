@@ -9,8 +9,8 @@ import discord
 import pyrebase
 from discord.ext import commands
 
-from .utils.wynn import GuildMemberManager, GuildPrefixManager, PlayerManager
-from .managers import ConfigManager
+from .managers import ConfigManager, GuildPrefixManager, GuildMemberManager, PlayerManager
+
 
 class SlashCommand:
     def __init__(self, bot: EYESBot, guild_ids: List[int]):
