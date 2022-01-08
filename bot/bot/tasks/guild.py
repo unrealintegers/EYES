@@ -36,10 +36,7 @@ class GuildListUpdater(BotTask):
             else:
                 response = response.json()
 
-            try:
-                existing_guilds = set(map(lambda x: x.key(), self.path().get().each()))
-            except TypeError:
-                existing_guilds = set()
+            existing_guilds = self.path().shallow().get().val() or []
 
             guilds = response['guilds']
             one_day = td(days=1).total_seconds()
