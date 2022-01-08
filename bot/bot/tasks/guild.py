@@ -87,7 +87,7 @@ class GuildUpdater(BotTask):
         guilds = self.guild_path().get().each()
         for guild in guilds:
             guild_name = guild.key()
-            timestamp = guild.val()['next_update']
+            timestamp = guild.val().get('next_update', 0)
             heapq.heappush(self.pq, (timestamp, guild_name))
 
     @staticmethod
