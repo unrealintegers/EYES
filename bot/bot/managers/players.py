@@ -6,11 +6,13 @@ import typing
 import aiohttp
 
 if typing.TYPE_CHECKING:
-    pass
+    from ..bot import EYESBot
 
 
 class PlayerManager:
-    def __init__(self):
+    def __init__(self, bot: 'EYESBot'):
+        self.bot = bot
+
         self.players = []
 
     def run(self):
@@ -26,6 +28,9 @@ class PlayerManager:
 
         del players['request']
         self.players = sum(players.values(), [])
+
+        # Update playtime
+
 
         await asyncio.sleep(30)
         asyncio.create_task(self.update())

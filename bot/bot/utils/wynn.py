@@ -1,12 +1,8 @@
 from __future__ import annotations
 
-import typing
 from datetime import datetime as dt
 
 from dateutil import parser as dtparser
-
-if typing.TYPE_CHECKING:
-    pass
 
 RANKS = [
     'RECRUIT',
