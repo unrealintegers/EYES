@@ -49,7 +49,7 @@ class EYESBot:
 
         self.guilds = GuildMemberManager(self)
         self.prefixes = GuildPrefixManager(self)
-        self.players = PlayerManager()
+        self.players = PlayerManager(self)
 
         self.tasks: Dict[str, BotTask] = {}
 

@@ -3,5 +3,6 @@ __all__ = (
     "config",
     "general",
     "guild",
-    "moderation"
+    "moderation",
+    "playtime"
 )

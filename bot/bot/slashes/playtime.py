@@ -1,0 +1,26 @@
+from datetime import datetime as dt
+from typing import List
+
+from discord import ApplicationContext, Option
+
+from ..bot import EYESBot, SlashCommand
+
+
+class PlaytimeCommand(SlashCommand, name="playtime"):
+    def __init__(self, bot: EYESBot, guild_ids: List[int]):
+        super().__init__(bot, guild_ids)
+
+        self.register(self.playtime)
+
+    def playerpath(self):
+        return self.bot.db.child('wynncraft').child('playtime').child('players')
+
+    async def playtime(self, ctx: ApplicationContext,
+                       player: Option(str, "whose playtime to view"),
+                       days: Option(int, "how many days of playtime")):
+        now = int(dt.utcnow().timestamp())
+        prev = now - days * 86400
+
+        online_times = self.playerpath().child(player).order_by_key().start_at(str(prev)).end_at(str(now)).get().val()
+        pt = int(len(online_times) * 0.5)
+        await ctx.respond(f"`{player}`'s `{days}d` playtime: `{pt // 60}h{pt % 60}m`")
