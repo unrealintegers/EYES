@@ -77,6 +77,7 @@ class RemindCommand(SlashCommand, name="remind"):
         self.bot.bot.slash_command(name='remind',
                                    guild_ids=self.guild_ids)(self.reminder)
 
+        self.update().call_func()
         self.update().start()
 
     def path(self):
