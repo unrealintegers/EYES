@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-from typing import List
+from typing import List, Dict
 
 import discord
 import pyrebase
@@ -51,7 +51,7 @@ class EYESBot:
         self.prefixes = GuildPrefixManager(self)
         self.players = PlayerManager()
 
-        self.tasks: List[BotTask] = []
+        self.tasks: Dict[str, BotTask] = {}
 
         # Using env variable as Heroku expects
         firebase = pyrebase.initialize_app(json.loads(os.getenv("DB_CREDS")))
@@ -72,7 +72,7 @@ class EYESBot:
 
     async def add_tasks(self):
         for sub_cls in BotTask.__subclasses__():
-            self.tasks.append(sub_cls(self))
+            self.tasks[sub_cls.__name__] = sub_cls(self)
 
     def run(self):
         self.bot.run(os.getenv("TOKEN"))
