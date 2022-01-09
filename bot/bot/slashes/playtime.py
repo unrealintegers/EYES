@@ -18,6 +18,7 @@ class PlaytimeCommand(SlashCommand, name="playtime"):
     async def playtime(self, ctx: ApplicationContext,
                        player: Option(str, "whose playtime to view"),
                        days: Option(int, "how many days of playtime")):
+        """Shows a player's playtime"""
         now = int(dt.utcnow().timestamp())
         prev = now - days * 86400
 

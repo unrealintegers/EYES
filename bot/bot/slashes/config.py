@@ -23,6 +23,7 @@ class ConfigCommand(SlashCommand, name="config"):
                            choices=[OptionChoice("user"),
                                     OptionChoice("guild"),
                                     OptionChoice("global")])):
+        """Sets a config flag"""
         if scope == "global":
             if not await ctx.bot.is_owner(ctx.user):
                 await ctx.respond("Insufficient permissions for scope: `global`.")

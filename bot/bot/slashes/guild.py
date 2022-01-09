@@ -57,6 +57,7 @@ class GuildCommand(SlashCommand, name="guild"):
             self, ctx: ApplicationContext,
             guild: Option(str, "guild to look up")
     ):
+        """Shows information about online players/ranks for a guild"""
         def parse_guild(guild_name):
             if ' | ' in guild_name:
                 return guild_name.partition(' | ')[2]
