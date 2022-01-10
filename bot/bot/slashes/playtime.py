@@ -23,5 +23,5 @@ class PlaytimeCommand(SlashCommand, name="playtime"):
         prev = now - days * 86400
 
         online_times = self.playerpath().child(player).order_by_key().start_at(str(prev)).end_at(str(now)).get().val()
-        pt = int(len(online_times) * 0.5)
+        pt = int(sum(online_times.values()))
         await ctx.respond(f"`{player}`'s `{days}d` playtime: `{pt // 60}h{pt % 60}m`")
