@@ -145,7 +145,7 @@ class GuildUpdater(BotTask):
 
         # Record this update
         if num_changes == 0:
-            no_diff_days = self.guild_path().child(guild_name).child('no_diff_days').get().val()
+            no_diff_days = self.guild_path().child(guild_name).child('no_diff_days').get().val() or 0
             no_diff_days += 1
         else:
             no_diff_days = 0
