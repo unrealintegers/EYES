@@ -1,8 +1,10 @@
 from collections import OrderedDict
+from datetime import datetime as dt
 from itertools import product
 from typing import List, Dict
 
 from discord import ApplicationContext, Option, OptionChoice, Embed
+from discord.utils import escape_markdown
 from fuzzywuzzy import fuzz, process
 
 from ..bot import EYESBot, SlashCommand
@@ -17,10 +19,37 @@ class GuildCommand(SlashCommand, name="guild"):
             "guild", "No Description", guild_ids=self.guild_ids
         )
 
-        info = self.group.command()(self.players)
-        info.options[0].autocomplete = self.players_autocompleter
+        players = self.group.command()(self.players)
+        players.options[0].autocomplete = self.guild_autocompleter
 
-    async def players_autocompleter(self, ctx: ApplicationContext):
+        playtime = self.group.command()(self.playtime)
+        playtime.options[0].autocomplete = self.guild_autocompleter
+
+    def parse_guild(self, guild_name):
+        if ' | ' in guild_name:
+            return guild_name.partition(' | ')[2]
+        elif guild_name in self.bot.prefixes.g2p:
+            return guild_name
+        else:
+            return self.bot.prefixes.p2g.get(guild_name)
+
+    def parse_guilds(self, guilds_name):
+        guilds = ConfigManager.get("guildgroups", guilds_name)
+
+        # Not found => Not a group
+        if guilds is None:
+            # Check if this is a multi-guild search
+            if ',' in guilds_name:
+                guilds = map(lambda x: x.strip(), guilds_name.split(','))
+            else:
+                guilds = [guilds_name]
+
+        # Put everything through the parse function
+        parsed_guilds = {gu: self.parse_guild(gu) for gu in guilds}
+        unparsed_guilds = [k for k, v in parsed_guilds.items() if v is None]
+        return parsed_guilds, unparsed_guilds
+
+    async def guild_autocompleter(self, ctx: ApplicationContext):
         def generate_letters(letter):
             """A simple function to generate the upper and lower case variants of a letter, in order."""
             if len(letter) != 1 or not letter.isalpha():
@@ -58,27 +87,7 @@ class GuildCommand(SlashCommand, name="guild"):
             guild: Option(str, "guild to look up")
     ):
         """Shows information about online players/ranks for a guild"""
-        def parse_guild(guild_name):
-            if ' | ' in guild_name:
-                return guild_name.partition(' | ')[2]
-            elif guild_name in self.bot.prefixes.g2p:
-                return guild_name
-            else:
-                return self.bot.prefixes.p2g.get(guild_name)
-
-        guilds = ConfigManager.get("guildgroups", guild)
-
-        # Not found => Not a group
-        if guilds is None:
-            # Check if this is a multi-guild search
-            if ',' in guild:
-                guilds = map(lambda x: x.strip(), guild.split(','))
-            else:
-                guilds = [guild]
-
-        # Put everything through the parse function
-        parsed_guilds = {gu: parse_guild(gu) for gu in guilds}
-        unparsed_guilds = [k for k, v in parsed_guilds.items() if v is None]
+        parsed_guilds, unparsed_guilds = self.parse_guilds(guild)
 
         # Error handling
         if len(unparsed_guilds) == 1:
@@ -135,3 +144,35 @@ class GuildCommand(SlashCommand, name="guild"):
 
             final_str = start_str + '\n'.join(guild_strs) + end_str
             await ctx.send_followup(final_str)
+
+    async def playtime(
+            self, ctx: ApplicationContext,
+            guild: Option(str, "guild to look up"),
+            days: Option(int, "how many days of playtime")
+    ):
+        now = int(dt.utcnow().timestamp())
+        prev = now - days * 86400
+
+        guild = self.parse_guild(guild)
+        members = self.bot.guilds.get(guild)
+        playtime = []
+
+        await ctx.defer()
+
+        for member in members:
+            online_times = self.bot.db.child('wynncraft').child('playtime').child('players').child(member.name) \
+                .order_by_key().start_at(str(prev)).end_at(str(now)).get().val()
+            playtime.append((member.name, int(len(online_times) * 0.5)))
+
+        # We grab the top 10
+        playtime.sort(key=lambda x: (-x[1], x[0]))
+        playtime = playtime[:10]
+
+        names, playtimes = zip(*playtime)
+        names_str = '\n'.join(map(lambda x: escape_markdown(x), names))
+        playtimes_str = '\n'.join(map(lambda x: f"{x // 60}h{x % 60}m", playtimes))
+        embed = Embed(title=guild, colour=0x4e51d4)
+        embed.add_field(name="Member", value=names_str)
+        embed.add_field(name="Playtime", value=playtimes_str)
+
+        await ctx.send_followup(embed=embed)
