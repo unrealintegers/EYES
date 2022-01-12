@@ -31,8 +31,8 @@ class PlayerPlaytimeGrouper(BotTask):
     def __init__(self, bot: EYESBot):
         super().__init__(bot)
 
-        self.update_short.start()
-        self.update_long.start()
+        self.update_short().start()
+        self.update_long().start()
 
     def rawpath(self):
         return self.bot.db.child('wynncraft').child('playtimeraw')
@@ -42,17 +42,23 @@ class PlayerPlaytimeGrouper(BotTask):
 
     # Short: Update every 1h
     @aiocron.crontab("0 * * * *", start=False, tz=utc)
-    async def update_short(self):
+    def update_short(self):
         """Processes raw playtime data to usable playtime data with 1h granularity."""
-        data = self.rawpath().get().val()
-        one_hour_ago = int((dt.utcnow() - td(hours=1)).timestamp())
+        async def wrapper():
+            data = self.rawpath().get().val()
+            one_hour_ago = int((dt.utcnow() - td(hours=1)).timestamp())
 
-        # Each entry is 0.5 minutes
-        update_dict = {f'{k}/{one_hour_ago}/': 0.5 * len(v) for k, v in data.values()}
-        self.path().update(update_dict)
-        self.rawpath().remove()
+            # Each entry is 0.5 minutes
+            update_dict = {f'{k}/{one_hour_ago}/': 0.5 * len(v) for k, v in data.values()}
+            self.path().update(update_dict)
+            self.rawpath().remove()
+
+        return wrapper
 
     # Long: Update every 1d
     @aiocron.crontab("0 0 * * *", start=False, tz=utc)
-    async def update_long(self):
-        pass
+    def update_long(self):
+        async def wrapper():
+            pass
+
+        return wrapper
