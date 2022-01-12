@@ -162,7 +162,7 @@ class GuildCommand(SlashCommand, name="guild"):
         for member in members:
             online_times = self.bot.db.child('wynncraft').child('playtime').child('players').child(member.name) \
                 .order_by_key().start_at(str(prev)).end_at(str(now)).get().val()
-            playtime.append((member.name, int(len(online_times) * 0.5)))
+            playtime.append((member.name, int(sum(online_times.values()))))
 
         # We grab the top 10
         playtime.sort(key=lambda x: (-x[1], x[0]))
