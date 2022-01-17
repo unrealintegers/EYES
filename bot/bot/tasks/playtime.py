@@ -49,7 +49,7 @@ class PlayerPlaytimeGrouper(BotTask):
             one_hour_ago = int((dt.utcnow() - td(hours=1)).timestamp())
 
             # Each entry is 0.5 minutes
-            update_dict = {f'{k}/{one_hour_ago}/': 0.5 * len(v) for k, v in data.values()}
+            update_dict = {f'{k}/{one_hour_ago}/': 0.5 * len(v) for k, v in data.items()}
             self.path().update(update_dict)
             self.rawpath().remove()
 

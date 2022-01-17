@@ -31,6 +31,12 @@ class GuildMember:
             self.joined = dt.utcfromtimestamp(joined)
         self.contributed = contributed
 
+    def __repr__(self):
+        return f"<GuildMember name={self.name}>"
+
+    def __str__(self):
+        return f"<GuildMember name={self.name}>"
+
     @classmethod
     def from_data(cls, data):
         if data['rank']:
