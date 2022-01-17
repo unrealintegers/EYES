@@ -150,7 +150,7 @@ class GuildUpdater(BotTask):
         else:
             no_diff_days = 0
 
-        interval = self.guild_path().child(guild_name).child('interval').get().val() or td(days=1)
+        interval = self.guild_path().child(guild_name).child('interval').get().val() or td(days=1).total_seconds()
         next_interval = self.calc_next_interval(td(seconds=interval), no_diff_days, num_changes)
         next_update = dt.now() + next_interval
 
