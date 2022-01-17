@@ -41,9 +41,9 @@ class PlayerPlaytimeGrouper(BotTask):
         return self.bot.db.child('wynncraft').child('playtime').child('players')
 
     # Short: Update every 1h
-    @aiocron.crontab("0 * * * *", start=False, tz=utc)
     def update_short(self):
         """Processes raw playtime data to usable playtime data with 1h granularity."""
+        @aiocron.crontab("0 * * * *", start=False, tz=utc)
         async def wrapper():
             data = self.rawpath().get().val()
             one_hour_ago = int((dt.utcnow() - td(hours=1)).timestamp())
@@ -56,8 +56,8 @@ class PlayerPlaytimeGrouper(BotTask):
         return wrapper
 
     # Long: Update every 1d
-    @aiocron.crontab("0 0 * * *", start=False, tz=utc)
     def update_long(self):
+        @aiocron.crontab("0 0 * * *", start=False, tz=utc)
         async def wrapper():
             pass
 
