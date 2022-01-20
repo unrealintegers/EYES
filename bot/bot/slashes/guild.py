@@ -1,14 +1,15 @@
+import random
 from collections import OrderedDict
 from datetime import datetime as dt
 from itertools import product
 from typing import List, Dict
 
 from discord import ApplicationContext, Option, OptionChoice, Embed
-from discord.utils import escape_markdown
 from fuzzywuzzy import fuzz, process
 
 from ..bot import EYESBot, SlashCommand
 from ..managers import ConfigManager
+from ..utils.paginator import ButtonPaginator
 
 
 class GuildCommand(SlashCommand, name="guild"):
@@ -160,19 +161,19 @@ class GuildCommand(SlashCommand, name="guild"):
         await ctx.defer()
 
         for member in members:
+            # We default to empty dict as otherwise it might be an empty list
             online_times = self.bot.db.child('wynncraft').child('playtime').child('players').child(member.name) \
-                .order_by_key().start_at(str(prev)).end_at(str(now)).get().val()
-            playtime.append((member.name, int(sum(online_times.values()))))
+                               .order_by_key().start_at(str(prev)).end_at(str(now)).get().val() or {}
+            member_playtime = int(sum(online_times.values()))
+            playtime.append((member.name, member_playtime))
 
-        # We grab the top 10
         playtime.sort(key=lambda x: (-x[1], x[0]))
-        playtime = playtime[:10]
 
         names, playtimes = zip(*playtime)
-        names_str = '\n'.join(map(lambda x: escape_markdown(x), names))
-        playtimes_str = '\n'.join(map(lambda x: f"{x // 60}h{x % 60}m", playtimes))
-        embed = Embed(title=guild, colour=0x4e51d4)
-        embed.add_field(name="Member", value=names_str)
-        embed.add_field(name="Playtime", value=playtimes_str)
+        playtimes = list(map(lambda x: f"{x // 60}h{x % 60}m", playtimes))
+        data = {"Member": names, "Playtime": playtimes}
 
-        await ctx.send_followup(embed=embed)
+        # 24 bit colour
+        paginator = ButtonPaginator(ctx, f"{guild} {days}d Playtime", data, colour=random.getrandbits(24))
+
+        await paginator.generate_embed().respond()
