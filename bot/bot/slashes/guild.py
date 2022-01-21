@@ -162,6 +162,7 @@ class GuildCommand(SlashCommand, name="guild"):
 
         for member in members:
             # We default to empty dict as otherwise it might be an empty list
+            self.bot.db.path = None
             online_times = self.bot.db.child('wynncraft').child('playtime').child('players').child(member.name) \
                                .order_by_key().start_at(str(prev)).end_at(str(now)).get().val() or {}
             member_playtime = int(sum(online_times.values()))

@@ -13,6 +13,7 @@ class PlaytimeCommand(SlashCommand, name="playtime"):
         self.register(self.playtime)
 
     def playerpath(self):
+        self.bot.db.path = None
         return self.bot.db.child('wynncraft').child('playtime').child('players')
 
     async def playtime(self, ctx: ApplicationContext,

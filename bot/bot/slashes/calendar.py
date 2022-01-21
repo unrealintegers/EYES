@@ -81,6 +81,7 @@ class RemindCommand(SlashCommand, name="remind"):
         self.update().start()
 
     def path(self):
+        self.bot.db.path = None
         return self.bot.db.child('utils').child('reminders')
 
     async def remind(self, reminder_id: str, time: timedelta):

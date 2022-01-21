@@ -13,6 +13,7 @@ class PlayerPlaytimeUpdater(BotTask):
         super().__init__(bot)
 
     def path(self):
+        self.bot.db.path = None
         return self.bot.db.child('wynncraft').child('playtimeraw')
 
     def update(self, players: List[str]):
@@ -35,9 +36,11 @@ class PlayerPlaytimeGrouper(BotTask):
         self.update_long().start()
 
     def rawpath(self):
+        self.bot.db.path = None
         return self.bot.db.child('wynncraft').child('playtimeraw')
 
     def path(self):
+        self.bot.db.path = None
         return self.bot.db.child('wynncraft').child('playtime').child('players')
 
     # Short: Update every 1h

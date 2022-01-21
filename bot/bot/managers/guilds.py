@@ -17,6 +17,7 @@ class GuildMemberManager:
         self.bot = bot
 
     def path(self):
+        self.bot.db.path = None
         return self.bot.db.child('wynncraft').child('guilds')
 
     def get(self, guild_name) -> Set[GuildMember]:
@@ -34,6 +35,7 @@ class GuildPrefixManager:
         self.update().start()
 
     def path(self):
+        self.bot.db.path = None
         return self.bot.db.child('wynncraft').child('prefixes')
 
     def update(self):

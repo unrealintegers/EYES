@@ -61,12 +61,15 @@ class GuildUpdater(BotTask):
         asyncio.create_task(self.next())
 
     def guild_path(self):
+        self.bot.db.path = None
         return self.bot.db.child('wynncraft').child('guilds')
 
     def deleted_path(self):
+        self.bot.db.path = None
         return self.bot.db.child('wynncraft').child('deleted_guilds')
 
     def prefix_path(self):
+        self.bot.db.path = None
         return self.bot.db.child('wynncraft').child('prefixes')
 
     async def next(self):
