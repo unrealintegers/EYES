@@ -151,6 +151,7 @@ class GuildCommand(SlashCommand, name="guild"):
             guild: Option(str, "guild to look up"),
             days: Option(int, "how many days of playtime")
     ):
+        """Shows the playtime leaderboard of a guild"""
         now = int(dt.utcnow().timestamp())
         prev = now - days * 86400
 

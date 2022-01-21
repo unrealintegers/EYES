@@ -7,7 +7,6 @@ import aiohttp
 
 if typing.TYPE_CHECKING:
     from ..bot import EYESBot
-    from ..tasks.playtime import PlayerPlaytimeUpdater
 
 
 class PlayerManager:
