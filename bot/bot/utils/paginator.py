@@ -133,7 +133,10 @@ class ButtonPaginator(TablePaginator):
     async def respond(self):
         """Responds by sending a new embed if one doesn't exist, or edits an existing embed."""
         if isinstance(self.ctx, ApplicationContext):
-            return await self.ctx.respond(embed=self.embed, view=self.view)
+            if self.ctx.response.is_done():
+                return await self.edit()
+            else:
+                return await self.send()
         else:
             if self.message is None:
                 return await self.send()
@@ -156,7 +159,7 @@ class ButtonPaginator(TablePaginator):
         if self.embed is None:
             raise ValueError("Embed has not been generated yet!")
         if isinstance(self.ctx, ApplicationContext):
-            return await self.ctx.send_followup(embed=self.embed, view=self.view)
+            return await self.ctx.edit(embed=self.embed, view=self.view)
         else:
             if self.message is None:
                 raise ValueError("No message exists to edit.")
