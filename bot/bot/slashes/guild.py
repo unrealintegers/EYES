@@ -1,4 +1,5 @@
 import random
+import time
 from collections import OrderedDict
 from datetime import datetime as dt
 from itertools import product
@@ -159,21 +160,33 @@ class GuildCommand(SlashCommand, name="guild"):
         members = self.bot.guilds.get(guild)
         playtime = []
 
-        await ctx.defer()
+        total = len(members)
+        await ctx.respond("Fetching data...")
+        start = time.time()
 
-        for member in members:
+        for i, member in enumerate(members):
+            # Progress bar
+            if time.time() - start > 5:
+                start = time.time()
+                await ctx.edit(content=f"Fetching data... ({i}/{total})")
+
             # We default to empty dict as otherwise it might be an empty list
             self.bot.db.path = None
             online_times = self.bot.db.child('wynncraft').child('playtime').child('players').child(member.name) \
                                .order_by_key().start_at(str(prev)).end_at(str(now)).get().val() or {}
             member_playtime = int(sum(online_times.values()))
-            playtime.append((member.name, member_playtime))
 
-        playtime.sort(key=lambda x: (-x[1], x[0]))
+            all_times = map(int, self.bot.db.child('wynncraft').child('playtime').child('players').child(member.name)
+                            .shallow().get().val() or [-1])
+            last_seen = max(all_times)
+            playtime.append((member.name, member_playtime, last_seen))
 
-        names, playtimes = zip(*playtime)
+        playtime.sort(key=lambda x: (-x[1], -x[2], x[0]))
+
+        names, playtimes, seens = zip(*playtime)
+        seens = list(map(lambda x: f"<t:{x}:R>" if x >= 0 else "Never", seens))
         playtimes = list(map(lambda x: f"{x // 60}h{x % 60}m", playtimes))
-        data = {"Member": names, "Playtime": playtimes}
+        data = {"Member": names, "Playtime": playtimes, "Last Seen": seens}
 
         # 24 bit colour
         paginator = ButtonPaginator(ctx, f"{guild} {days}d Playtime", data, colour=random.getrandbits(24))
