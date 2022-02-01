@@ -48,7 +48,7 @@ class PlayerPlaytimeGrouper(BotTask):
         """Processes raw playtime data to usable playtime data with 1h granularity."""
         @aiocron.crontab("0 * * * *", start=False, tz=utc)
         async def wrapper():
-            data = self.rawpath().get().val()
+            data = self.rawpath().get().val() or {}
             one_hour_ago = int((dt.utcnow() - td(hours=1)).timestamp())
 
             # Each entry is 0.5 minutes
