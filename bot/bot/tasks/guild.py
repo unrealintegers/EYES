@@ -72,6 +72,10 @@ class GuildUpdater(BotTask):
         self.bot.db.path = None
         return self.bot.db.child('wynncraft').child('prefixes')
 
+    def xp_path(self):
+        self.bot.db.path = None
+        return self.bot.db.child('wynncraft').child('xp')
+
     async def next(self):
         if self.pq:  # is not empty
             # We check that it is in fact time to update the smallest item
@@ -146,6 +150,9 @@ class GuildUpdater(BotTask):
         num_changes = len(memberdict.keys() | memberdict_old.keys()) - len(memberdict.keys() & memberdict_old.keys())
         self.guild_path().child(guild_name).child('members').set(memberdict)
 
+        # Calculate XP transitions
+        await self.update_xp(guild_name, memberdict_old, memberdict)
+
         # Record this update
         if num_changes == 0:
             no_diff_days = self.guild_path().child(guild_name).child('no_diff_days').get().val() or 0
@@ -164,3 +171,18 @@ class GuildUpdater(BotTask):
         })
 
         return next_update.timestamp()
+
+    async def update_xp(self, guild_name, old_members, new_members):
+        total = 0
+        update_dict = {}
+        for member in new_members.keys():
+            old_xp = old_members.get(member, {}).get('contributed', 0)
+            new_xp = new_members[member].get('contributed') or old_xp
+            gained = new_xp - old_xp
+            update_dict[member] = gained
+            total += gained
+
+        timestamp = int(dt.now().timestamp())
+
+        self.xp_path().child('contributed').child(guild_name).child(timestamp).update(update_dict)
+        self.xp_path().child('guilds').child(guild_name).child(timestamp).set(total)
