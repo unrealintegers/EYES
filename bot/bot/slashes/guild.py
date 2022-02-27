@@ -5,7 +5,9 @@ from datetime import datetime as dt
 from itertools import product
 from typing import List, Dict
 
-from discord import ApplicationContext, Option, OptionChoice, Embed
+from discord import ApplicationContext, Option, OptionChoice
+from discord import CommandPermission
+from discord import Embed
 from fuzzywuzzy import fuzz, process
 
 from ..bot import EYESBot, SlashCommand
@@ -14,8 +16,8 @@ from ..utils.paginator import ButtonPaginator
 
 
 class GuildCommand(SlashCommand, name="guild"):
-    def __init__(self, bot: EYESBot, guild_ids: List[int]):
-        super().__init__(bot, guild_ids)
+    def __init__(self, bot: EYESBot, guild_ids: list[int], permissions: list[CommandPermission]):
+        super().__init__(bot, guild_ids, permissions)
 
         self.group = self.bot.bot.create_group(
             "guild", "No Description", guild_ids=self.guild_ids

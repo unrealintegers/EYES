@@ -3,13 +3,14 @@ from typing import List
 
 from discord import ApplicationContext, Option
 from discord import File
+from discord import CommandPermission
 
 from ..bot import EYESBot, SlashCommand
 
 
 class EvaluateCommand(SlashCommand, name="evaluate"):
-    def __init__(self, bot: EYESBot, guild_ids: List[int]):
-        super().__init__(bot, guild_ids)
+    def __init__(self, bot: EYESBot, guild_ids: list[int], permissions: list[CommandPermission]):
+        super().__init__(bot, guild_ids, permissions)
 
         self.result = None
 

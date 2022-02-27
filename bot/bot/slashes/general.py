@@ -1,16 +1,16 @@
 from collections import defaultdict
 from datetime import datetime as dt
-from typing import List
 
 from discord import ApplicationContext, Option
+from discord import CommandPermission
 from discord import Member
 
 from ..bot import EYESBot, SlashCommand
 
 
 class ImpersonateCommand(SlashCommand, name="impersonate"):
-    def __init__(self, bot: EYESBot, guild_ids: List[int]):
-        super().__init__(bot, guild_ids)
+    def __init__(self, bot: EYESBot, guild_ids: list[int], permissions: list[CommandPermission]):
+        super().__init__(bot, guild_ids, permissions)
 
         self.cooldowns = defaultdict(lambda: [dt.utcnow(), 3])
 

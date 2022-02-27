@@ -3,30 +3,46 @@ from __future__ import annotations
 import json
 import logging
 import os
-from typing import List, Dict
+from typing import Optional
 
-import discord
-import pyrebase
+from discord import Role
+from discord import Intents, Permissions, CommandPermission
+import pyrebase as pyrebase4
 from discord.ext import commands
 
 from .managers import ConfigManager, GuildPrefixManager, GuildMemberManager, PlayerManager
+from .listeners import ReactionListener
 
 
 class SlashCommand:
-    def __init__(self, bot: EYESBot, guild_ids: List[int]):
+    def __init__(self, bot: EYESBot, guild_ids: list[int], permissions: Optional[list[CommandPermission]]):
         self.bot = bot
         self.guild_ids = guild_ids
+        self.permissions = permissions
 
-    def __init_subclass__(cls, **kwargs):
-        if 'name' in kwargs:
-            cls.name = kwargs['name']
-        else:
-            cls.name = cls.__name__.lower()
+    def __init_subclass__(cls, *,
+                          name: str = None,
+                          required_permission: Permissions = None,
+                          **kwargs):
+        cls.name = name or cls.__name__.lower()
+        cls.permissions = required_permission
+
+    @classmethod
+    def generate_permissions(cls, role_list: dict[int, list[Role]]):
+        if cls.permissions is None:  # noqa: permissions is always defined
+            return []
+
+        permissions = []
+        for guild_id, roles in role_list.items():
+            for role in roles:
+                if cls.permissions.is_subset(role.permissions):  # noqa: permissions is always defined
+                    permissions.append(CommandPermission(role.id, 1, True, guild_id))
+        return permissions
 
     def register(self, coro, *, name=None):
         if not name:
             name = coro.__name__
-        self.bot.bot.slash_command(guild_ids=self.guild_ids, name=name)(coro)
+        self.bot.bot.slash_command(name=name, guild_ids=self.guild_ids, permissions=self.permissions)(coro)
 
 
 class BotTask:
@@ -37,7 +53,7 @@ class BotTask:
 class EYESBot:
     def __init__(self, prefix: str):
         self.bot = commands.Bot(command_prefix=prefix,
-                                intents=discord.Intents.all())
+                                intents=Intents.all())
         self.bot.remove_command('help')
 
         # Setup logging
@@ -50,11 +66,12 @@ class EYESBot:
         self.guilds = GuildMemberManager(self)
         self.prefixes = GuildPrefixManager(self)
         self.players = PlayerManager(self)
+        self.reaction = ReactionListener(self)
 
-        self.tasks: Dict[str, BotTask] = {}
+        self.tasks: dict[str, BotTask] = {}
 
         # Using env variable as Heroku expects
-        firebase = pyrebase.initialize_app(json.loads(os.getenv("DB_CREDS")))
+        firebase = pyrebase4.initialize_app(json.loads(os.getenv("DB_CREDS")))
         self.db = firebase.database()
 
         ConfigManager.init_db(self.db)
@@ -62,10 +79,16 @@ class EYESBot:
         self.bot.add_listener(self.on_ready)
 
     async def instantiate_commands(self, cmd_dict):
+        role_list = {}
+        for guild in self.bot.guilds:
+            role_list[guild.id] = await guild.fetch_roles()
+
         for sub_cls in SlashCommand.__subclasses__():
             name = sub_cls.name  # noqa : name is guaranteed to be defined
             guild_ids = cmd_dict.pop(name, None)  # None = global
-            sub_cls(self, guild_ids)
+            permissions = sub_cls.generate_permissions(role_list)
+
+            sub_cls(self, guild_ids, permissions)
 
         if cmd_dict:
             print(f"Unregistered Commands: {cmd_dict}")

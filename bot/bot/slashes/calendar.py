@@ -2,11 +2,11 @@ import asyncio
 from datetime import datetime as dt
 from datetime import timedelta
 from datetime import timedelta as td
-from typing import List
 
 import aiocron
 from dateparser import parse as parsedate
 from discord import ApplicationContext, Option
+from discord import CommandPermission
 
 from ..bot import EYESBot, SlashCommand
 
@@ -69,8 +69,8 @@ class Reminder:
 
 
 class RemindCommand(SlashCommand, name="remind"):
-    def __init__(self, bot: EYESBot, guild_ids: List[int]):
-        super().__init__(bot, guild_ids)
+    def __init__(self, bot: EYESBot, guild_ids: list[int], permissions: list[CommandPermission]):
+        super().__init__(bot, guild_ids, permissions)
 
         self.DATE_FORMAT = r"%d/%m/%Y %H:%M:%S"
 
