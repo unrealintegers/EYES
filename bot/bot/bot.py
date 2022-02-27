@@ -22,10 +22,10 @@ class SlashCommand:
 
     def __init_subclass__(cls, *,
                           name: str = None,
-                          required_permission: Permissions = None,
+                          permissions: Permissions = None,
                           **kwargs):
         cls.name = name or cls.__name__.lower()
-        cls.permissions = required_permission
+        cls.permissions = permissions
 
     @classmethod
     def generate_permissions(cls, role_list: dict[int, list[Role]]):
@@ -35,8 +35,11 @@ class SlashCommand:
         permissions = []
         for guild_id, roles in role_list.items():
             for role in roles:
-                if cls.permissions.is_subset(role.permissions):  # noqa: permissions is always defined
+                if role.permissions.administrator:
                     permissions.append(CommandPermission(role.id, 1, True, guild_id))
+                elif cls.permissions.is_subset(role.permissions):  # noqa: permissions is always defined
+                    permissions.append(CommandPermission(role.id, 1, True, guild_id))
+
         return permissions
 
     def register(self, coro, *, name=None):
@@ -106,7 +109,7 @@ class EYESBot:
         self.players.run()
 
         await self.instantiate_commands({})  # TODO: Setup command dict in DB
-        await self.bot.register_commands()
+        await self.bot.sync_commands()
 
         await self.add_tasks()
 
