@@ -1,0 +1,37 @@
+from discord import Interaction, Member
+from discord import Object
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..bot import EYESBot
+
+
+class ReactionListener:
+    def __init__(self, bot: 'EYESBot'):
+        self.bot = bot
+
+        self.bot.bot.add_listener(self.on_interaction)
+
+    @staticmethod
+    async def role_action(member: Member, role_id: int):
+        if member.get_role(role_id):
+            await member.remove_roles(Object(id=role_id))
+            return "Role Successfully Removed!"
+        else:
+            await member.add_roles(Object(id=role_id))
+            return "Role Successfully Added!"
+
+    async def on_interaction(self, interaction: Interaction):
+        if interaction.guild is None:
+            return
+
+        custom_id = interaction.custom_id
+        if custom_id is None or not custom_id.startswith('$'):
+            return
+
+        action, _, arg = custom_id[1:].partition('$')
+
+        if action == "r":
+            member = interaction.user
+            message = await self.role_action(member, int(arg))
+            await interaction.response.send_message(message)
