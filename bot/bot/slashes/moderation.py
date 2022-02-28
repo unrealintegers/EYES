@@ -9,8 +9,8 @@ from ..bot import EYESBot, SlashCommand
 
 
 class EvaluateCommand(SlashCommand, name="evaluate"):
-    def __init__(self, bot: EYESBot, guild_ids: list[int], permissions: list[CommandPermission]):
-        super().__init__(bot, guild_ids, permissions)
+    def __init__(self, bot: EYESBot, guild_ids: list[int]):
+        super().__init__(bot, guild_ids)
 
         self.result = None
 

@@ -8,8 +8,8 @@ from ..bot import EYESBot, SlashCommand
 
 
 class ConfigCommand(SlashCommand, name="config"):
-    def __init__(self, bot: EYESBot, guild_ids: list[int], permissions: list[CommandPermission]):
-        super().__init__(bot, guild_ids, permissions)
+    def __init__(self, bot: EYESBot, guild_ids: list[int]):
+        super().__init__(bot, guild_ids)
 
         self.config = self.bot.bot.create_group(
             "config", "No Description", guild_ids=self.guild_ids

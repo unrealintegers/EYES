@@ -7,14 +7,13 @@ from discord import Permissions, CommandPermission
 
 
 class AutoroleCommand(SlashCommand, name="autorole", permissions=Permissions(manage_roles=True, manage_messages=True)):
-    def __init__(self, bot: EYESBot, guild_ids: list[int], permissions: list[CommandPermission]):
-        super().__init__(bot, guild_ids, permissions)
+    def __init__(self, bot: EYESBot, guild_ids: list[int]):
+        super().__init__(bot, guild_ids)
 
         self.group = self.bot.bot.create_group(
             "autorole", "No Description", guild_ids
         )
         self.group.default_permission = False
-        self.group.permissions = self.permissions
 
         self.group.command()(self.create)
 

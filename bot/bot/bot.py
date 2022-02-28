@@ -15,37 +15,20 @@ from .listeners import ReactionListener
 
 
 class SlashCommand:
-    def __init__(self, bot: EYESBot, guild_ids: list[int], permissions: Optional[list[CommandPermission]]):
+    def __init__(self, bot: EYESBot, guild_ids: list[int]):
         self.bot = bot
         self.guild_ids = guild_ids
-        self.permissions = permissions
 
     def __init_subclass__(cls, *,
                           name: str = None,
                           permissions: Permissions = None,
                           **kwargs):
         cls.name = name or cls.__name__.lower()
-        cls.permissions = permissions
-
-    @classmethod
-    def generate_permissions(cls, role_list: dict[int, list[Role]]):
-        if cls.permissions is None:  # noqa: permissions is always defined
-            return []
-
-        permissions = []
-        for guild_id, roles in role_list.items():
-            for role in roles:
-                if role.permissions.administrator:
-                    permissions.append(CommandPermission(role.id, 1, True, guild_id))
-                elif cls.permissions.is_subset(role.permissions):  # noqa: permissions is always defined
-                    permissions.append(CommandPermission(role.id, 1, True, guild_id))
-
-        return permissions
 
     def register(self, coro, *, name=None):
         if not name:
             name = coro.__name__
-        self.bot.bot.slash_command(name=name, guild_ids=self.guild_ids, permissions=self.permissions)(coro)
+        self.bot.bot.slash_command(name=name, guild_ids=self.guild_ids)(coro)
 
 
 class BotTask:
@@ -81,20 +64,15 @@ class EYESBot:
 
         self.bot.add_listener(self.on_ready)
 
-    async def instantiate_commands(self, cmd_dict):
-        role_list = {}
-        for guild in self.bot.guilds:
-            role_list[guild.id] = await guild.fetch_roles()
-
+    async def instantiate_commands(self, guild_dict):
         for sub_cls in SlashCommand.__subclasses__():
             name = sub_cls.name  # noqa : name is guaranteed to be defined
-            guild_ids = cmd_dict.pop(name, None)  # None = global
-            permissions = sub_cls.generate_permissions(role_list)
+            guild_ids = guild_dict.pop(name, None)  # None = global
 
-            sub_cls(self, guild_ids, permissions)
+            sub_cls(self, guild_ids)
 
-        if cmd_dict:
-            print(f"Unregistered Commands: {cmd_dict}")
+        if guild_dict:
+            print(f"Unregistered Commands: {guild_dict}")
 
     async def add_tasks(self):
         for sub_cls in BotTask.__subclasses__():

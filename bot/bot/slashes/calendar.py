@@ -69,13 +69,12 @@ class Reminder:
 
 
 class RemindCommand(SlashCommand, name="remind"):
-    def __init__(self, bot: EYESBot, guild_ids: list[int], permissions: list[CommandPermission]):
-        super().__init__(bot, guild_ids, permissions)
+    def __init__(self, bot: EYESBot, guild_ids: list[int]):
+        super().__init__(bot, guild_ids)
 
         self.DATE_FORMAT = r"%d/%m/%Y %H:%M:%S"
 
-        self.bot.bot.slash_command(name='remind',
-                                   guild_ids=self.guild_ids)(self.reminder)
+        self.register(self.reminder, name='remind')
 
         self.update().call_func()
         self.update().start()
