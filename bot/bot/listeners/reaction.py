@@ -25,7 +25,7 @@ class ReactionListener:
         if interaction.guild is None:
             return
 
-        custom_id = interaction.custom_id
+        custom_id = getattr(interaction, "custom_id", None)
         if custom_id is None or not custom_id.startswith('$'):
             return
 
