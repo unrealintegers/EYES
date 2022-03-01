@@ -1,9 +1,7 @@
 import io
-from typing import List
 
 from discord import ApplicationContext, Option
 from discord import File
-from discord import CommandPermission
 
 from ..bot import EYESBot, SlashCommand
 

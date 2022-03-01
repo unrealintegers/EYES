@@ -1,8 +1,6 @@
 import json
-from typing import List
 
 from discord import ApplicationContext, Option, OptionChoice
-from discord import CommandPermission
 
 from ..bot import EYESBot, SlashCommand
 
@@ -18,12 +16,12 @@ class ConfigCommand(SlashCommand, name="config"):
         self.config.command(name="set")(self.set_)
 
     async def set_(self, ctx: ApplicationContext,
-             path: Option(str, "config path, use / for separator"),
-             value: Option(str, "JSON value to set"),
-             scope: Option(str, "where this should be applied",
-                           choices=[OptionChoice("user"),
-                                    OptionChoice("guild"),
-                                    OptionChoice("global")])):
+                   path: Option(str, "config path, use / for separator"),
+                   value: Option(str, "JSON value to set"),
+                   scope: Option(str, "where this should be applied",
+                                 choices=[OptionChoice("user"),
+                                          OptionChoice("guild"),
+                                          OptionChoice("global")])):
         """Sets a config flag"""
         if scope == "global":
             if not await ctx.bot.is_owner(ctx.user):

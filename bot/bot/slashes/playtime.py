@@ -1,7 +1,6 @@
 from datetime import datetime as dt
 
 from discord import ApplicationContext, Option
-from discord import CommandPermission
 
 from ..bot import EYESBot, SlashCommand
 

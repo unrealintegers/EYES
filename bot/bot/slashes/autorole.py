@@ -3,7 +3,7 @@ from ..utils.autorolewizard import AutoroleWizard
 
 from discord import ApplicationContext
 from discord import Member
-from discord import Permissions, CommandPermission
+from discord import Permissions
 
 
 class AutoroleCommand(SlashCommand, name="autorole", permissions=Permissions(manage_roles=True, manage_messages=True)):
