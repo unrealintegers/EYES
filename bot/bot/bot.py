@@ -81,7 +81,7 @@ class EYESBot:
         for guild_id, d1 in perms_dict.items():
             guild_permissions = []
             for command_name, d2 in d1.items():
-                command_id = find(lambda c: c[1].name == command_name, self.bot._application_commands)
+                command_id = find(lambda c: c[1].name == command_name, self.bot._application_commands.items())[0]
                 command_permissions = []
 
                 for role_id, permission in d2.items():
