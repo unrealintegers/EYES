@@ -110,7 +110,8 @@ class AutoroleWizard:
         else:
             channel_id = int(channel_match.group(1))
             channel = await interaction.guild.fetch_channel(channel_id)
-            await channel.send(content=self.sample.content, embeds=self.sample.embeds, view=self.sample.persistent_views[0])
+            await channel.send(content=self.sample.content, embeds=self.sample.embeds,
+                               view=View(*self.sample.components))
 
         await msg.delete()
         await interaction.delete_original_message()
