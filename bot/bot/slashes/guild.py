@@ -6,7 +6,6 @@ from itertools import product
 from typing import List, Dict
 
 from discord import ApplicationContext, Option, OptionChoice
-from discord import CommandPermission
 from discord import Embed
 from fuzzywuzzy import fuzz, process
 

@@ -2,7 +2,6 @@ from collections import defaultdict
 from datetime import datetime as dt
 
 from discord import ApplicationContext, Option
-from discord import CommandPermission
 from discord import Member
 
 from ..bot import EYESBot, SlashCommand

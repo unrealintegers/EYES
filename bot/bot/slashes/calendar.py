@@ -6,7 +6,6 @@ from datetime import timedelta as td
 import aiocron
 from dateparser import parse as parsedate
 from discord import ApplicationContext, Option
-from discord import CommandPermission
 
 from ..bot import EYESBot, SlashCommand
 
