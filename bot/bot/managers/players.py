@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import asyncio
-import typing
 import time
+import typing
+
 import aiohttp
 
 if typing.TYPE_CHECKING:
@@ -13,7 +14,8 @@ class PlayerManager:
     def __init__(self, bot: 'EYESBot'):
         self.bot = bot
 
-        self.players = set()
+        self.dict: dict = {}
+        self.all: set[str] = set()
 
     def run(self):
         asyncio.create_task(self.update())
@@ -28,11 +30,12 @@ class PlayerManager:
                 players = await response.json()
 
         del players['request']
-        self.players = set(sum(players.values(), []))
+        self.dict = players
+        self.all = set(sum(players.values(), []))
 
         # Update playtime
         if playtime := self.bot.tasks.get('PlayerPlaytimeUpdater'):
-            playtime.update(self.players)  # type: ignore
+            playtime.update(self.all)
 
         await asyncio.sleep(30 - (time.perf_counter() - t))
         asyncio.create_task(self.update())
