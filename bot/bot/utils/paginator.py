@@ -12,9 +12,12 @@ class TablePaginator:
                  title: str,
                  data: Dict[str, Sequence],
                  perpage: int = 10,
+                 *,
+                 text: str,
                  **kwargs):
 
         self.title = title
+        self.text = text
         self.embed_args = kwargs
 
         self.data = data
@@ -60,9 +63,9 @@ class TablePaginator:
             raise ValueError("Embed has not been generated yet!")
 
         if isinstance(self.ctx, ApplicationContext):
-            return await self.ctx.send_response(embed=self.embed)
+            return await self.ctx.send_response(content=self.text, embed=self.embed)
         else:
-            self.message = await self.ctx.send(embed=self.embed)
+            self.message = await self.ctx.send(content=self.text, embed=self.embed)
             return self.message
 
     async def edit(self):
@@ -70,11 +73,11 @@ class TablePaginator:
         if self.embed is None:
             raise ValueError("Embed has not been generated yet!")
         if isinstance(self.ctx, ApplicationContext):
-            return await self.ctx.edit(embed=self.embed)
+            return await self.ctx.edit(content=self.text, embed=self.embed)
         else:
             if self.message is None:
                 raise ValueError("No message exists to edit.")
-            await self.message.edit(embed=self.embed)
+            await self.message.edit(content=self.text, embed=self.embed)
             return self.message
 
     def scroll(self, offset):
@@ -149,7 +152,7 @@ class ButtonPaginator(TablePaginator):
             raise ValueError("Embed has not been generated yet!")
 
         if isinstance(self.ctx, ApplicationContext):
-            return await self.ctx.send_response(embed=self.embed, view=self.view)
+            return await self.ctx.send_response(content=self.text, embed=self.embed, view=self.view)
         else:
             self.message = await self.ctx.send(embed=self.embed, view=self.view)
             return self.message
@@ -159,11 +162,11 @@ class ButtonPaginator(TablePaginator):
         if self.embed is None:
             raise ValueError("Embed has not been generated yet!")
         if isinstance(self.ctx, ApplicationContext):
-            return await self.ctx.edit(embed=self.embed, view=self.view)
+            return await self.ctx.edit(content=self.text, embed=self.embed, view=self.view)
         else:
             if self.message is None:
                 raise ValueError("No message exists to edit.")
-            await self.message.edit(embed=self.embed, view=self.view)
+            await self.message.edit(content=self.text, embed=self.embed, view=self.view)
             return self.message
 
     async def first_page_callback(self, *_):
