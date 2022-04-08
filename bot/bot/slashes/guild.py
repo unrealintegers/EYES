@@ -7,6 +7,7 @@ from typing import List, Dict
 
 from discord import ApplicationContext, Option, OptionChoice
 from discord import Embed
+from discord.utils import escape_markdown
 from fuzzywuzzy import fuzz, process
 
 from ..bot import EYESBot, SlashCommand
@@ -21,6 +22,9 @@ class GuildCommand(SlashCommand, name="guild"):
         self.group = self.bot.bot.create_group(
             "guild", "No Description", guild_ids=self.guild_ids
         )
+
+        online = self.group.command()(self.online)
+        online.options[0].autocomplete = self.guild_autocompleter
 
         players = self.group.command()(self.players)
         players.options[0].autocomplete = self.guild_autocompleter
@@ -85,6 +89,29 @@ class GuildCommand(SlashCommand, name="guild"):
         formatted_guilds = [OptionChoice(f"{self.bot.prefixes.g2p[gu]} | {gu}", gu) for gu in guilds]
         return formatted_guilds
 
+    async def online(
+            self, ctx: ApplicationContext,
+            guild: Option(str, "gild to look up")
+    ):
+        """Lists online players in a guild"""
+        parsed = self.parse_guild(guild)
+
+        members = self.bot.guilds.get(parsed)
+        online_members = filter(lambda m: m.name in self.bot.players.all, members)
+        sorted_members = list(sorted(online_members, key=lambda m: (-m.rank, m.name)))
+
+        embed = Embed(title=f"{self.bot.prefixes.g2p[parsed]} | {parsed}", colour=random.getrandbits(24))
+
+        if online_members:
+            names = '\n'.join(map(lambda x: x.name, sorted_members))
+            ranks = '\n'.join(map(lambda x: f"{'*' * x.rank:<5s}", sorted_members))
+            worlds = '\n'.join(map(lambda x: self.bot.players.worlds.get(x.name), sorted_members))
+            embed.add_field(name="Username", value=escape_markdown(names), inline=True)
+            embed.add_field(name="Rank", value=escape_markdown(ranks), inline=True)
+            embed.add_field(name="World", value=escape_markdown(worlds), inline=True)
+
+        await ctx.respond(embed=embed)
+
     async def players(
             self, ctx: ApplicationContext,
             guild: Option(str, "guild to look up")
@@ -108,7 +135,7 @@ class GuildCommand(SlashCommand, name="guild"):
         for guild in parsed_guilds.values():
             # We construct sets for intersection for better time complexity
             members = self.bot.guilds.get(guild)
-            online_members = filter(lambda m: m.name in self.bot.players.players, members)
+            online_members = filter(lambda m: m.name in self.bot.players.all, members)
 
             # This counts how many of each rank are online
             ranks[guild] = [0] * 6
@@ -188,6 +215,6 @@ class GuildCommand(SlashCommand, name="guild"):
         data = {"Member": names, "Playtime": playtimes, "Last Seen": seens}
 
         # 24 bit colour
-        paginator = ButtonPaginator(ctx, f"{guild} {days}d Playtime", data, colour=random.getrandbits(24))
+        paginator = ButtonPaginator(ctx, f"{guild} {days}d Playtime", data, colour=random.getrandbits(24), text='')
 
         await paginator.generate_embed().respond()
