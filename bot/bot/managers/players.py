@@ -13,7 +13,7 @@ class PlayerManager:
     def __init__(self, bot: 'EYESBot'):
         self.bot = bot
 
-        self.players = []
+        self.players = set()
 
     def run(self):
         asyncio.create_task(self.update())
@@ -28,7 +28,7 @@ class PlayerManager:
                 players = await response.json()
 
         del players['request']
-        self.players = sum(players.values(), [])
+        self.players = set(sum(players.values(), []))
 
         # Update playtime
         if playtime := self.bot.tasks.get('PlayerPlaytimeUpdater'):

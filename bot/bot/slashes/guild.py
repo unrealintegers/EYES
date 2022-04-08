@@ -108,13 +108,11 @@ class GuildCommand(SlashCommand, name="guild"):
         for guild in parsed_guilds.values():
             # We construct sets for intersection for better time complexity
             members = self.bot.guilds.get(guild)
-            online_players = self.bot.players.players
-            online_members = set(m.name for m in members) & set(online_players)
-            online_guildmembers = filter(lambda m: m.name in online_members, members)
+            online_members = filter(lambda m: m.name in self.bot.players.players, members)
 
             # This counts how many of each rank are online
             ranks[guild] = [0] * 6
-            for member in online_guildmembers:
+            for member in online_members:
                 member_rank = member.rank
                 ranks[guild][member_rank] += 1
 
