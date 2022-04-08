@@ -91,9 +91,13 @@ class AutoroleWizard:
         del self
 
     async def edit_text(self, interaction: Interaction):
-        await interaction.response.send_message("Type your desired message below:")
+        await interaction.response.send_message("Type your desired message below, `_` for blank:")
         msg: Message = await self.bot.bot.wait_for("message", check=self.message_check)
-        await self.sample.edit(content=msg.content)
+        if msg.content == "_":
+            await self.sample.edit(content="")
+        else:
+            await self.sample.edit(content=msg.content)
+
         await msg.delete()
         await interaction.delete_original_message()
 

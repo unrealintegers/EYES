@@ -34,4 +34,4 @@ class ReactionListener:
         if action == "r":
             member = interaction.user
             message = await self.role_action(member, int(arg))
-            await interaction.response.send_message(message)
+            await interaction.response.send_message(message, ephemeral=True)
