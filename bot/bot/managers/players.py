@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import time
 import typing
+from functools import reduce
 
 import aiohttp
 
@@ -16,6 +17,7 @@ class PlayerManager:
 
         self.dict: dict = {}
         self.all: set[str] = set()
+        self.worlds: dict = {}
 
     def run(self):
         asyncio.create_task(self.update())
@@ -32,6 +34,7 @@ class PlayerManager:
         del players['request']
         self.dict = players
         self.all = set(sum(players.values(), []))
+        self.worlds = reduce(lambda a, b: a | b, map(lambda i: {x: i[0] for x in i[1]}, self.dict.items()))
 
         # Update playtime
         if playtime := self.bot.tasks.get('PlayerPlaytimeUpdater'):
