@@ -26,7 +26,7 @@ class SlashCommand:
 
     def register(self, coro, *, name=None):
         if not name:
-            name = coro.__name__
+            name = self.name
         self.bot.bot.slash_command(name=name, guild_ids=self.guild_ids)(coro)
 
 
