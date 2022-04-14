@@ -73,7 +73,7 @@ class RemindCommand(SlashCommand, name="remind"):
 
         self.DATE_FORMAT = r"%d/%m/%Y %H:%M:%S"
 
-        self.register(self.reminder, name='remind')
+        self.register(self.reminder)
 
         self.update().call_func()
         self.update().start()
