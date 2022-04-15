@@ -165,6 +165,8 @@ class GuildUpdater(BotTask):
         next_update = dt.now() + next_interval
 
         self.guild_path().child(guild_name).update({
+            "level": response['level'],
+            "size": len(memberdict),
             "interval": next_interval.total_seconds(),
             "no_diff_days": no_diff_days,
             "next_update": next_update.timestamp()
