@@ -29,9 +29,16 @@ class ReactionListener:
         if custom_id is None or not custom_id.startswith('$'):
             return
 
-        action, _, arg = custom_id[1:].partition('$')
+        action, _, arg = custom_id[1:].partition(' ')
 
-        if action == "r":
+        if action == "role":
+            role_id, *reqs = arg.split()
             member = interaction.user
-            message = await self.role_action(member, int(arg))
-            await interaction.response.send_message(message, ephemeral=True)
+            role_ids = [r.id for r in member.roles]
+
+            if all(int(req) in role_ids for req in reqs):
+                message = await self.role_action(member, int(role_id))
+                await interaction.response.send_message(message, ephemeral=True)
+            else:
+                await interaction.response.send_message("Sorry, you do not have sufficient permissions to obtain"
+                                                        "this role.", ephemeral=True)
