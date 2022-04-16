@@ -13,13 +13,17 @@ class ReactionListener:
         self.bot.bot.add_listener(self.on_interaction)
 
     @staticmethod
-    async def role_action(member: Member, role_id: int):
+    async def role_action(member: Member, role_id: int, required_ids: list[int]):
         if member.get_role(role_id):
             await member.remove_roles(Object(id=role_id))
             return "Role Successfully Removed!"
         else:
-            await member.add_roles(Object(id=role_id))
-            return "Role Successfully Added!"
+            role_ids = [r.id for r in member.roles]
+            if all(int(req) in role_ids for req in required_ids):
+                await member.add_roles(Object(id=role_id))
+                return "Role Successfully Added!"
+            else:
+                return "Insufficient Permissions!"
 
     async def on_interaction(self, interaction: Interaction):
         if interaction.guild is None:
@@ -34,11 +38,7 @@ class ReactionListener:
         if action == "role":
             role_id, *reqs = arg.split()
             member = interaction.user
-            role_ids = [r.id for r in member.roles]
 
-            if all(int(req) in role_ids for req in reqs):
-                message = await self.role_action(member, int(role_id))
-                await interaction.response.send_message(message, ephemeral=True)
-            else:
-                await interaction.response.send_message("Sorry, you do not have sufficient permissions to obtain"
-                                                        "this role.", ephemeral=True)
+            message = await self.role_action(member, int(role_id), reqs)
+            await interaction.response.send_message(message, ephemeral=True)
+
