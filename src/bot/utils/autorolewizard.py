@@ -219,13 +219,13 @@ class AutoroleWizard:
         style = getattr(ButtonStyle, i9n.custom_id)
 
         await interaction.edit_original_message(content="Type the desired action when the button is pressed:\n"
-                                                        "`role <Role ID> <Required IDs>` grants or revokes the role"
+                                                        "`role <Role ID> <Required IDs>` grants or revokes the role "
                                                         "to anyone who has the IDs required.", view=None)
         msg = await self.bot.bot.wait_for("message", check=self.message_check)
         action, _, arg = msg.content.partition(' ')
 
         custom_id = None
-        if action == "role":
+        if action == "role" or action == 'r$':
             role_id, *reqs = arg.split()
             if not role_id.isdecimal():
                 await interaction.followup.send("Invalid Role ID!")
