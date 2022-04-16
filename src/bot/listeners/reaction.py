@@ -22,7 +22,7 @@ class ReactionListener:
             role_ids = [r.id for r in member.roles]
 
             # We map each role ID to a boolean (and then string), and eval it
-            mapped = map(lambda r: str(int(r) in role_id) if r.isdecimal() else r, required_ids)
+            mapped = map(lambda r: str(int(r) in role_ids) if r.isdecimal() else r, required_ids)
             result = eval(' '.join(mapped))
 
             if result:
