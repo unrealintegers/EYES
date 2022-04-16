@@ -231,7 +231,7 @@ class AutoroleWizard:
                 await interaction.followup.send("Invalid Role ID!")
                 await interaction.delete_original_message()
                 return
-            elif not all(req.isdecimal() for req in reqs):
+            elif not all(req.isdecimal() or req in ('|', '&') for req in reqs):
                 await interaction.followup.send("Invalid Required IDs!")
                 await interaction.delete_original_message()
                 return

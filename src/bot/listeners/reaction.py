@@ -13,13 +13,19 @@ class ReactionListener:
         self.bot.bot.add_listener(self.on_interaction)
 
     @staticmethod
-    async def role_action(member: Member, role_id: int, required_ids: list[int]):
+    async def role_action(member: Member, role_id: int, required_ids: list):
         if member.get_role(role_id):
             await member.remove_roles(Object(id=role_id))
             return "Role Successfully Removed!"
         else:
+            # I think we can safely use an eval trick here
             role_ids = [r.id for r in member.roles]
-            if all(int(req) in role_ids for req in required_ids):
+
+            # We map each role ID to a boolean (and then string), and eval it
+            mapped = map(lambda r: str(int(r) in role_id) if r.isdecimal() else r, required_ids)
+            result = eval(' '.join(mapped))
+
+            if result:
                 await member.add_roles(Object(id=role_id))
                 return "Role Successfully Added!"
             else:
@@ -41,4 +47,3 @@ class ReactionListener:
 
             message = await self.role_action(member, int(role_id), reqs)
             await interaction.response.send_message(message, ephemeral=True)
-
