@@ -225,7 +225,7 @@ class AutoroleWizard:
         action, _, arg = msg.content.partition(' ')
 
         custom_id = None
-        if action == "role" or action == 'r$':
+        if action == "role":
             role_id, *reqs = arg.split()
             if not role_id.isdecimal():
                 await interaction.followup.send("Invalid Role ID!")

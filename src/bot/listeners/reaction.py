@@ -35,7 +35,7 @@ class ReactionListener:
 
         action, _, arg = custom_id[1:].partition(' ')
 
-        if action == "role":
+        if action == "role" or action == "r$":
             role_id, *reqs = arg.split()
             member = interaction.user
 
