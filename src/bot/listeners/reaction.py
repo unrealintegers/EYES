@@ -39,7 +39,7 @@ class ReactionListener:
         if custom_id is None or not custom_id.startswith('$'):
             return
 
-        action, _, arg = custom_id[1:].partition(' ')
+        action, _, arg = custom_id[1:].replace('$', ' ').partition(' ')
 
         if action == "role" or action == "r$":
             role_id, *reqs = arg.split()
