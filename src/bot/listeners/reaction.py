@@ -23,7 +23,7 @@ class ReactionListener:
 
             # We map each role ID to a boolean (and then string), and eval it
             mapped = map(lambda r: str(int(r) in role_ids) if r.isdecimal() else r, required_ids)
-            result = eval(' '.join(mapped))
+            result = eval(' '.join(mapped) or 'True')
 
             if result:
                 await member.add_roles(Object(id=role_id))
