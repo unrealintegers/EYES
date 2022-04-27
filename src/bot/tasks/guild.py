@@ -154,17 +154,20 @@ class GuildUpdater(BotTask):
         await self.update_xp(guild_name, memberdict_old, memberdict)
 
         # Record this update
+        interval = self.guild_path().child(guild_name).child('interval').get().val() or td(days=1).total_seconds()
+
         if num_changes == 0:
             no_diff_days = self.guild_path().child(guild_name).child('no_diff_days').get().val() or 0
-            no_diff_days += 1
+            no_diff_days += interval / (60 * 60 * 24)
         else:
             no_diff_days = 0
 
-        interval = self.guild_path().child(guild_name).child('interval').get().val() or td(days=1).total_seconds()
         next_interval = self.calc_next_interval(td(seconds=interval), no_diff_days, num_changes)
         next_update = dt.now() + next_interval
 
         self.guild_path().child(guild_name).update({
+            "level": response['level'],
+            "size": len(memberdict),
             "interval": next_interval.total_seconds(),
             "no_diff_days": no_diff_days,
             "next_update": next_update.timestamp()
