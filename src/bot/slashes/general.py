@@ -39,7 +39,7 @@ class ImpersonateCommand(SlashCommand, name="impersonate"):
 
         if not webhooks:
             webhook = await ctx.channel.create_webhook(
-                name='VegeBot',
+                name='EYES',
             )
         else:
             webhook = webhooks[0]
