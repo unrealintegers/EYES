@@ -104,9 +104,9 @@ class GuildUpdater(BotTask):
 
         # If diff = 0 for more than 5 days, increase interval
         if num_changes == 0:
-            if interval < td(days=1) and no_diff_days >= 4:
+            if interval < td(days=1) and no_diff_days >= 2:
                 interval = td(days=1)
-            else:
+            elif no_diff_days >= 4:
                 interval *= 2
         elif num_changes != 0:
             if interval > td(days=1):
