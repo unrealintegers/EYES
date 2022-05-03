@@ -113,9 +113,11 @@ class EYESBot:
         self.players.run()
 
         await self.instantiate_commands()  # TODO: Setup command dict in DB
-        await self.bot.sync_commands()
-        await self.process_permissions()
-
         await self.add_tasks()
+
+        await self.bot.sync_commands()
+        # await self.process_permissions()
+
+
 
         self.logger.info("Synced")
