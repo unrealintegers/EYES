@@ -17,6 +17,7 @@ class AutoroleCommand(SlashCommand, name="autorole", permissions=Permissions(man
         self.group.default_permission = False
 
         self.group.command()(self.create)
+        self.group.command()(self.edit)
 
     async def create(
             self, ctx: ApplicationContext
