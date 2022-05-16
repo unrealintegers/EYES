@@ -75,10 +75,68 @@ class AutoroleWizard:
         # 30 minute timeout
         self.original_view = View(*items, timeout=1800)
 
-        self.instructions = await self.thread.send(embed=embed, view=self.original_view)
+        self.instructions = await self.thread.send(content=author.mention, embed=embed, view=self.original_view)
         self.sample = await self.thread.send("This is a sample of what users will see...")
         self.sample_embed = None
         self.sample_view = View()
+
+        return self
+
+    @classmethod
+    async def from_msg(cls, bot: EYESBot, author: Member, channel: TextChannel, original: Message):
+        self = AutoroleWizard(bot)
+        self.author = author
+
+        thread_type = ChannelType.private_thread if channel.guild.premium_tier >= 2 else ChannelType.public_thread
+
+        self.thread = await channel.create_thread(name="Autorole Wizard", type=thread_type)
+        self.creation_msg = await channel.history(limit=5).find(lambda m: m.type == MessageType.thread_created)
+
+        embed = Embed(title="Autorole Wizard",
+                      description="Below you will find a message which will be a sample of what your autorole prompt "
+                                  "will look like. You may edit that using the buttons on this message.",
+                      colour=0x395863)
+
+        # Cancel | Edit Text | Send
+        # Embed Actions ?
+        # <OPT> Field Actions ?
+        # Add Button | Edit Button | Remove Button
+
+        close_btn = Button(label="Close", style=ButtonStyle.danger, row=4)
+        close_btn.callback = self.close
+        edit_text_btn = Button(label="Edit Text", style=ButtonStyle.secondary, row=4)
+        edit_text_btn.callback = self.edit_text
+        send_btn = Button(label="Send", style=ButtonStyle.success, row=4)
+        send_btn.callback = self.send
+
+        embed_select = Select(placeholder="Embed Actions", options=[
+            SelectOption(label="Add Embed", value="add_embed"),
+            SelectOption(label="Remove Embed", value="remove_embed"),
+            SelectOption(label="Set Title", value="set_title"),
+            SelectOption(label="Set Description", value="set_description"),
+            SelectOption(label="Set Colour", value="set_colour")
+        ], row=0)
+        embed_select.callback = self.select_actions
+
+        button_select = Select(placeholder="Button Actions", options=[
+            SelectOption(label="Add Button", value="add_button"),
+            SelectOption(label="Remove Button", value="remove_button")
+        ], row=2)
+        button_select.callback = self.select_actions
+
+        items = [
+            embed_select,
+            button_select,
+            close_btn, edit_text_btn, send_btn
+        ]
+
+        # 30 minute timeout
+        self.original_view = View(*items, timeout=1800)
+
+        self.instructions = await self.thread.send(content=author.mention, embed=embed, view=self.original_view)
+        self.sample = await self.thread.send(original.content, embeds=original.embeds, view=View(*original.components))
+        self.sample_embed = (original.embeds + [None])[0]
+        self.sample_view = View(*original.components)
 
         return self
 
