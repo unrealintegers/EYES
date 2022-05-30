@@ -106,7 +106,7 @@ class RemindCommand(SlashCommand, name="remind"):
             message: Option(str, "message", required=False) = 'something',
             repeats: Option(int, "-1 for infinity, defaults to 0",
                             required=False) = 0,
-            interval: Option(str, "repeat interval, defaults tp reminder time",
+            interval: Option(str, "repeat interval, defaults to reminder time",
                              required=False) = None
     ):
         """Reminds you about something"""
