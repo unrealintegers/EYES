@@ -3,11 +3,10 @@ from ..utils.autorolewizard import AutoroleWizard
 
 from discord import ApplicationContext, Option
 from discord import Member
-from discord import Permissions
 from discord import NotFound, HTTPException
 
 
-class AutoroleCommand(SlashCommand, name="autorole", permissions=Permissions(manage_roles=True, manage_messages=True)):
+class AutoroleCommand(SlashCommand, name="autorole"):
     def __init__(self, bot: EYESBot, guild_ids: list[int]):
         super().__init__(bot, guild_ids)
 
@@ -20,7 +19,7 @@ class AutoroleCommand(SlashCommand, name="autorole", permissions=Permissions(man
         self.group.command()(self.edit)
 
     async def create(
-            self, _, ctx: ApplicationContext
+            self, ctx: ApplicationContext
     ):
         """Creates a new autorole message."""
 
