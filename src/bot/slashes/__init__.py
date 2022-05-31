@@ -5,5 +5,6 @@ __all__ = (
     "general",
     "guild",
     "moderation",
-    "playtime"
+    "playtime",
+    "wynn"
 )

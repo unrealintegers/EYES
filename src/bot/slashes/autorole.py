@@ -20,7 +20,7 @@ class AutoroleCommand(SlashCommand, name="autorole", permissions=Permissions(man
         self.group.command()(self.edit)
 
     async def create(
-            self, ctx: ApplicationContext
+            self, _, ctx: ApplicationContext
     ):
         """Creates a new autorole message."""
 

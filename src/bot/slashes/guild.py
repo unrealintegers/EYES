@@ -90,7 +90,7 @@ class GuildCommand(SlashCommand, name="guild"):
         return formatted_guilds
 
     async def online(
-            self, ctx: ApplicationContext,
+            self, _, ctx: ApplicationContext,
             guild: Option(str, "gild to look up")
     ):
         """Lists online players in a guild"""
@@ -113,7 +113,7 @@ class GuildCommand(SlashCommand, name="guild"):
         await ctx.respond(embed=embed)
 
     async def players(
-            self, ctx: ApplicationContext,
+            self, _, ctx: ApplicationContext,
             guild: Option(str, "guild to look up")
     ):
         """Shows information about online players/ranks for a guild"""
@@ -174,7 +174,7 @@ class GuildCommand(SlashCommand, name="guild"):
             await ctx.send_followup(final_str)
 
     async def playtime(
-            self, ctx: ApplicationContext,
+            self, _, ctx: ApplicationContext,
             guild: Option(str, "guild to look up"),
             days: Option(int, "how many days of playtime")
     ):

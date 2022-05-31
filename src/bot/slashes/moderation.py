@@ -15,7 +15,7 @@ class EvaluateCommand(SlashCommand, name="evaluate"):
         self.register(self._eval, name="eval")
 
     async def _eval(
-            self, ctx: ApplicationContext,
+            self, _, ctx: ApplicationContext,
             command: Option(str, "&h")
     ):
         if ctx.user.id not in [330509305663193091, 475440146221760512]:

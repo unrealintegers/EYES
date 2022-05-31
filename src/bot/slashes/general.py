@@ -16,7 +16,7 @@ class ImpersonateCommand(SlashCommand, name="impersonate"):
         self.register(self.impersonate)
 
     async def impersonate(
-            self, ctx: ApplicationContext,
+            self, _, ctx: ApplicationContext,
             user: Option(Member, "who to impersonate"),
             message: Option(str, "message")
     ):

@@ -15,7 +15,7 @@ class PlaytimeCommand(SlashCommand, name="playtime"):
         self.bot.db.path = None
         return self.bot.db.child('wynncraft').child('playtime').child('players')
 
-    async def playtime(self, ctx: ApplicationContext,
+    async def playtime(self, _, ctx: ApplicationContext,
                        player: Option(str, "whose playtime to view"),
                        days: Option(int, "how many days of playtime")):
         """Shows a player's playtime"""
