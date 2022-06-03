@@ -15,7 +15,7 @@ class ConfigCommand(SlashCommand, name="config"):
 
         self.config.command(name="set")(self.set_)
 
-    async def set_(self, _, ctx: ApplicationContext,
+    async def set_(self, ctx: ApplicationContext,
                    path: Option(str, "config path, use / for separator"),
                    value: Option(str, "JSON value to set"),
                    scope: Option(str, "where this should be applied",

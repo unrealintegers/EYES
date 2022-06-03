@@ -101,7 +101,7 @@ class RemindCommand(SlashCommand, name="remind"):
         asyncio.create_task(_coro())
 
     async def reminder(
-            self, _, ctx: ApplicationContext,
+            self, ctx: ApplicationContext,
             time: Option(str, "time of reminder (can be duration)"),
             message: Option(str, "message", required=False) = 'something',
             repeats: Option(int, "-1 for infinity, defaults to 0",
