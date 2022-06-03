@@ -3,6 +3,7 @@ from datetime import datetime as dt
 
 from discord import ApplicationContext, Option
 from discord import Member
+from discord.utils import find
 
 from ..bot import EYESBot, SlashCommand
 
@@ -36,13 +37,12 @@ class ImpersonateCommand(SlashCommand, name="impersonate"):
         self.cooldowns[user][1] -= 1
 
         webhooks = await ctx.channel.webhooks()
+        webhook = find(lambda x: x.token, webhooks)
 
-        if not webhooks:
+        if not webhook:
             webhook = await ctx.channel.create_webhook(
                 name='EYES',
             )
-        else:
-            webhook = webhooks[0]
 
         await webhook.send(
             content=message,
