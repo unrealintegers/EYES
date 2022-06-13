@@ -27,7 +27,7 @@ class SoulPointCommand(SlashCommand, name="sp"):
 
         now = time.time_ns() // (10 ** 9)
         s_20min = 20 * 60
-        worlds = sorted(((k, (now - v['firstSeen'] + offset) % s_20min)
+        worlds = sorted(((k, (v['firstSeen'] // (10 ** 3) - now - offset) % s_20min)
                          for k, v in data['servers'].items()), key=lambda x: (x[1], x[0]))
 
         worlds, times = zip(*worlds)
