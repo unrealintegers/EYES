@@ -6,6 +6,7 @@ import os
 
 from discord import Intents, Permissions
 import pyrebase as pyrebase4
+from discord import SlashCommandGroup
 from discord.ext import commands
 from discord.utils import find
 
@@ -30,6 +31,19 @@ class SlashCommand:
         self.bot.bot.slash_command(name=name, guild_ids=self.guild_ids)(coro)
 
 
+class SlashGroup(SlashCommandGroup):
+    def __init__(self, bot: EYESBot, guild_ids: list[int]):
+        super().__init__(self.name, "No Description", guild_ids)
+
+        self.bot = bot
+
+    def __init_subclass__(cls, *,
+                          name: str = None,
+                          permissions: Permissions = None,
+                          **kwargs):
+        cls.name = name or cls.__name__.lower()
+
+
 class BotTask:
     def __init__(self, bot: EYESBot):
         self.bot = bot
@@ -38,7 +52,8 @@ class BotTask:
 class EYESBot:
     def __init__(self, prefix: str):
         self.bot = commands.Bot(command_prefix=prefix,
-                                intents=Intents.all())
+                                intents=Intents.all(),
+                                auto_sync_commands=False)
         self.bot.remove_command('help')
 
         # Setup logging
@@ -117,7 +132,5 @@ class EYESBot:
 
         await self.bot.sync_commands()
         # await self.process_permissions()
-
-
 
         self.logger.info("Synced")
