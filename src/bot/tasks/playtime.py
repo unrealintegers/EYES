@@ -4,6 +4,7 @@ from typing import List
 
 import aiocron
 from pytz import utc
+from requests import ConnectionError
 
 from ..bot import EYESBot, BotTask
 
@@ -19,7 +20,10 @@ class PlayerPlaytimeUpdater(BotTask):
     def update(self, players: List[str]):
         now = int(dt.utcnow().timestamp())
         update_dict = {f'{k}/{now}/': True for k in players}
-        self.path().update(update_dict)
+        try:
+            self.path().update(update_dict)
+        except ConnectionError as e:
+            self.bot.logger.error(f"Connection Error while updating: {e}")
 
 
 class PlayerPlaytimeGrouper(BotTask):
