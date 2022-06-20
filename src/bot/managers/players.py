@@ -12,6 +12,7 @@ if typing.TYPE_CHECKING:
 
 
 class PlayerManager:
+    """Manages, and updates the current online players"""
     def __init__(self, bot: 'EYESBot'):
         self.bot = bot
 

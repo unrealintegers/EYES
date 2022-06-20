@@ -10,6 +10,7 @@ from ..bot import EYESBot, BotTask
 
 
 class PlayerPlaytimeUpdater(BotTask):
+    """Updates players' playtime for a short timeframe as raw dicts in database"""
     def __init__(self, bot: EYESBot):
         super().__init__(bot)
 
@@ -50,6 +51,7 @@ class PlayerPlaytimeGrouper(BotTask):
     # Short: Update every 1h
     def update_short(self):
         """Processes raw playtime data to usable playtime data with 1h granularity."""
+
         @aiocron.crontab("0 * * * *", start=False, tz=utc)
         async def wrapper():
             data = self.rawpath().get().val() or {}

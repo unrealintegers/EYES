@@ -1,12 +1,16 @@
+from typing import TYPE_CHECKING
+
 from discord import Interaction, Member
 from discord import Object
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..bot import EYESBot
 
 
-class ReactionListener:
+class InteractionListener:
+    """
+    An interaction listener, currently used to assign roles to users
+    """
     def __init__(self, bot: 'EYESBot'):
         self.bot = bot
 

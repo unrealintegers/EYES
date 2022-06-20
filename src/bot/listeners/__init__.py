@@ -1,1 +1,1 @@
-from .reaction import ReactionListener
+from .interaction import InteractionListener

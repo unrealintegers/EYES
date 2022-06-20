@@ -4,14 +4,12 @@ import json
 import logging
 import os
 
-from discord import Intents, Permissions
 import pyrebase as pyrebase4
-from discord import SlashCommandGroup
+from discord import Intents, Permissions
 from discord.ext import commands
-from discord.utils import find
 
-from .managers import ConfigManager, GuildPrefixManager, GuildMemberManager, PlayerManager
 from .listeners import ReactionListener
+from .managers import ConfigManager, GuildPrefixManager, GuildMemberManager, PlayerManager
 
 
 class SlashCommand:
@@ -29,19 +27,6 @@ class SlashCommand:
         if not name:
             name = self.name
         self.bot.bot.slash_command(name=name, guild_ids=self.guild_ids)(coro)
-
-
-class SlashGroup(SlashCommandGroup):
-    def __init__(self, bot: EYESBot, guild_ids: list[int]):
-        super().__init__(self.name, "No Description", guild_ids)
-
-        self.bot = bot
-
-    def __init_subclass__(cls, *,
-                          name: str = None,
-                          permissions: Permissions = None,
-                          **kwargs):
-        cls.name = name or cls.__name__.lower()
 
 
 class BotTask:
@@ -63,6 +48,7 @@ class EYESBot:
         handler.setFormatter(logging.Formatter("%(message)s", "%m/%d %H:%M:%S"))
         self.logger.addHandler(handler)
 
+        # Create managers
         self.guilds = GuildMemberManager(self)
         self.prefixes = GuildPrefixManager(self)
         self.players = PlayerManager(self)
@@ -94,17 +80,17 @@ class EYESBot:
         for sub_cls in BotTask.__subclasses__():
             self.tasks[sub_cls.__name__] = sub_cls(self)
 
-    def run(self):
-        self.bot.run(os.getenv("TOKEN"))
-
     async def on_ready(self):
         self.logger.info("Connected")
 
         self.players.run()
 
-        await self.instantiate_commands()  # TODO: Setup command dict in DB
+        await self.instantiate_commands()
         await self.add_tasks()
 
         await self.bot.sync_commands()
 
         self.logger.info("Synced")
+
+    def run(self):
+        self.bot.run(os.getenv("TOKEN"))

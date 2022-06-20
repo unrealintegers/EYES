@@ -89,7 +89,6 @@ class RemindCommand(SlashCommand, name="remind"):
             if not (data := self.path().child(reminder_id).get().val()):
                 return
 
-            print(data)
             reminder = Reminder.from_data(data)
 
             # We try and calculate the next reminder

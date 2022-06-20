@@ -1,9 +1,9 @@
-from ..bot import SlashCommand, EYESBot
-from ..utils.autorolewizard import AutoroleWizard
-
 from discord import ApplicationContext, Option
 from discord import Member
 from discord import NotFound, HTTPException
+
+from ..bot import SlashCommand, EYESBot
+from ..utils.autorolewizard import AutoroleWizard
 
 
 class AutoroleCommand(SlashCommand, name="autorole"):
