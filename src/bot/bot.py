@@ -88,32 +88,7 @@ class EYESBot:
             sub_cls(self, list(guild_ids.keys()) or None)  # {} -> None = global
 
         if guild_dict:
-            print(f"Unregistered Commands: {guild_dict}")
-
-    async def process_permissions(self):
-        perms_dict = self.db.child("application").child("permissions").get().val()
-
-        for guild_id, d1 in perms_dict.items():
-            guild_permissions = []
-            for command_name, d2 in d1.items():
-                command_id = find(lambda c: c[1].name == command_name, self.bot._application_commands.items())[0]
-                command_permissions = []
-
-                for role_id, permission in d2.items():
-                    command_permissions.append({
-                        "id": role_id,
-                        "type": 1,
-                        "permission": permission
-                    })
-
-                guild_permissions.append({
-                    "id": command_id,
-                    "permissions": command_permissions
-                })
-
-            await self.bot.http.bulk_edit_guild_application_command_permissions(
-                self.bot.application_id, guild_id, guild_permissions
-            )
+            self.logger.info("Unregistered Commands: {guild_dict}")
 
     async def add_tasks(self):
         for sub_cls in BotTask.__subclasses__():
@@ -131,6 +106,5 @@ class EYESBot:
         await self.add_tasks()
 
         await self.bot.sync_commands()
-        # await self.process_permissions()
 
         self.logger.info("Synced")
