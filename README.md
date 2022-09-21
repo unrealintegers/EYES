@@ -1,0 +1,1 @@
+EYES is a Discord bot with many QoL (Quality of Life) features as well as some [Wynncraft](https://wynncraft.com/) related features.
