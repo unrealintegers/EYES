@@ -1,14 +1,17 @@
-from typing import Dict, Optional, Sequence
+from typing import Optional, Union, Dict, Sequence
 
-from discord import Message, Embed, ApplicationContext
+from discord import Message, Embed
+from discord import Interaction
 from discord.ui import View, Button
 from discord.abc import Messageable
 from discord.utils import escape_markdown
 
+Pageable = Union[Interaction, Messageable]
+
 
 class TablePaginator:
     def __init__(self,
-                 ctx: Messageable,
+                 ctx: Pageable,
                  title: str,
                  data: Dict[str, Sequence],
                  perpage: int = 10,
@@ -41,12 +44,14 @@ class TablePaginator:
             mapped_vs = map(lambda x: escape_markdown(str(x)), vs[self.start:self.end])
             embed.add_field(name=k, value='\n'.join(mapped_vs), inline=True)
 
+        embed.set_footer(text=f"{self.start+1}-{self.end} of {self.length}")
+
         self.embed = embed
         return self
 
     async def respond(self):
         """Responds by sending a new embed if one doesn't exist, or edits an existing embed."""
-        if isinstance(self.ctx, ApplicationContext):
+        if isinstance(self.ctx, Interaction):
             if not self.ctx.response.is_done():
                 return await self.send()
             else:
@@ -62,8 +67,8 @@ class TablePaginator:
         if self.embed is None:
             raise ValueError("Embed has not been generated yet!")
 
-        if isinstance(self.ctx, ApplicationContext):
-            return await self.ctx.send_response(content=self.text, embed=self.embed)
+        if isinstance(self.ctx, Interaction):
+            return await self.ctx.response.send_message(content=self.text, embed=self.embed)
         else:
             self.message = await self.ctx.send(content=self.text, embed=self.embed)
             return self.message
@@ -72,8 +77,9 @@ class TablePaginator:
         """Edits an existing embed."""
         if self.embed is None:
             raise ValueError("Embed has not been generated yet!")
-        if isinstance(self.ctx, ApplicationContext):
-            return await self.ctx.edit(content=self.text, embed=self.embed)
+        if isinstance(self.ctx, Interaction):
+            orig = await self.ctx.original_response()
+            return await orig.edit(content=self.text, embed=self.embed)
         else:
             if self.message is None:
                 raise ValueError("No message exists to edit.")
@@ -107,7 +113,7 @@ class TablePaginator:
 class ButtonPaginator(TablePaginator):
     """A button-based table paginator using buttons for navigation."""
     def __init__(self,
-                 ctx: Messageable,
+                 ctx: Pageable,
                  title: str,
                  data: Dict[str, Sequence],
                  perpage: int = 10,
@@ -124,18 +130,15 @@ class ButtonPaginator(TablePaginator):
         next_page_button = Button(emoji='▶')
         next_page_button.callback = self.next_page_callback
 
-        buttons = [
-            first_page_button,
-            prev_page_button,
-            next_page_button,
-            last_page_button
-        ]
-
-        self.view = View(*buttons)
+        self.view = View()
+        self.view.add_item(first_page_button)
+        self.view.add_item(prev_page_button)
+        self.view.add_item(next_page_button)
+        self.view.add_item(last_page_button)
 
     async def respond(self):
         """Responds by sending a new embed if one doesn't exist, or edits an existing embed."""
-        if isinstance(self.ctx, ApplicationContext):
+        if isinstance(self.ctx, Interaction):
             if self.ctx.response.is_done():
                 return await self.edit()
             else:
@@ -151,8 +154,8 @@ class ButtonPaginator(TablePaginator):
         if self.embed is None:
             raise ValueError("Embed has not been generated yet!")
 
-        if isinstance(self.ctx, ApplicationContext):
-            return await self.ctx.send_response(content=self.text, embed=self.embed, view=self.view)
+        if isinstance(self.ctx, Interaction):
+            return await self.ctx.response.send_message(content=self.text, embed=self.embed, view=self.view)
         else:
             self.message = await self.ctx.send(embed=self.embed, view=self.view)
             return self.message
@@ -161,22 +164,30 @@ class ButtonPaginator(TablePaginator):
         """Edits an existing embed."""
         if self.embed is None:
             raise ValueError("Embed has not been generated yet!")
-        if isinstance(self.ctx, ApplicationContext):
-            return await self.ctx.edit(content=self.text, embed=self.embed, view=self.view)
+        if isinstance(self.ctx, Interaction):
+            orig = await self.ctx.original_response()
+            return await orig.edit(content=self.text, embed=self.embed, view=self.view)
         else:
             if self.message is None:
                 raise ValueError("No message exists to edit.")
-            await self.message.edit(content=self.text, embed=self.embed, view=self.view)
+            await self.message.edit(content=self.text, embed=self.embed)
             return self.message
 
-    async def first_page_callback(self, *_):
-        return await self.first_page().generate_embed().respond()
+    async def interaction_edit(self, interaction: Interaction):
+        """Edits an existing embed using a button interaction."""
+        if self.embed is None:
+            raise ValueError("Embed has not been generated yet!")
+        if isinstance(self.ctx, Interaction):
+            await interaction.response.edit_message(content=self.text, embed=self.embed, view=self.view)
 
-    async def last_page_callback(self, *_):
-        return await self.last_page().generate_embed().respond()
+    async def first_page_callback(self, interaction: Interaction, *_):
+        await self.first_page().generate_embed().interaction_edit(interaction)
 
-    async def prev_page_callback(self, *_):
-        return await self.prev_page().generate_embed().respond()
+    async def last_page_callback(self, interaction: Interaction, *_):
+        await self.last_page().generate_embed().interaction_edit(interaction)
 
-    async def next_page_callback(self, *_):
-        return await self.next_page().generate_embed().respond()
+    async def prev_page_callback(self, interaction: Interaction, *_):
+        await self.prev_page().generate_embed().interaction_edit(interaction)
+
+    async def next_page_callback(self, interaction: Interaction, *_):
+        await self.next_page().generate_embed().interaction_edit(interaction)

@@ -1,4 +1,4 @@
-git+https://github.com/Pycord-Development/pycord.git@8953f7a017708d622242e6b59566e90435548f75
+discord.py
 pyrebase4
 requests
 aiohttp[speedups]
@@ -9,3 +9,4 @@ dateparser
 pytz
 
 fuzzywuzzy[speedup]
+python-dotenv

@@ -1,5 +1,9 @@
 from bot import EYESBot
 
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
 if __name__ == "__main__":
     # Import all slash commands and tasks so they get recognised as subclasses
     from bot.slashes import *  # noqa
@@ -8,4 +12,4 @@ if __name__ == "__main__":
 
     bot = EYESBot(',')
 
-    bot.run()
+    bot.run(os.getenv("TOKEN"))

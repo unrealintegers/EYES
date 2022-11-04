@@ -5,7 +5,8 @@ from datetime import timedelta as td
 
 import aiocron
 from dateparser import parse as parsedate
-from discord import ApplicationContext, Option
+from discord import Interaction
+import discord.app_commands as slash
 
 from ..bot import EYESBot, SlashCommand
 
@@ -73,8 +74,6 @@ class RemindCommand(SlashCommand, name="remind"):
 
         self.DATE_FORMAT = r"%d/%m/%Y %H:%M:%S"
 
-        self.register(self.reminder)
-
         self.update().call_func()
         self.update().start()
 
@@ -94,47 +93,42 @@ class RemindCommand(SlashCommand, name="remind"):
             # We try and calculate the next reminder
             reminder.next()
 
-            await self.bot.bot.get_user(reminder.discord_id).send(reminder.reminder_str())
+            await self.bot.get_user(reminder.discord_id).send(reminder.reminder_str())
             self.path().child(reminder_id).set(reminder.to_data())
 
         asyncio.create_task(_coro())
 
-    async def reminder(
-            self, ctx: ApplicationContext,
-            time: Option(str, "time of reminder (can be duration)"),
-            message: Option(str, "message", required=False) = 'something',
-            repeats: Option(int, "-1 for infinity, defaults to 0",
-                            required=False) = 0,
-            interval: Option(str, "repeat interval, defaults to reminder time",
-                             required=False) = None
+    @slash.describe(time="time of reminder (can be duration)",
+                    message="message",
+                    repeats="-1 for infinity, defaults to 0",
+                    interval="repeat interval, defaults to reminder time")
+    async def callback(
+            self, ictx: Interaction,
+            time: str, message: str = "something", repeats: int = 0, interval: str = None
     ):
         """Reminds you about something"""
         repeat = (repeats != 0)
 
         if repeat < -1:
-            await ctx.respond("Repeat has to be -1, 0 or a positive integer!",
-                              ephemeral=True)
+            await ictx.response.send_message("Repeat has to be -1, 0 or a positive integer!", ephemeral=True)
 
         remind_time = parsedate('in ' + time)
 
         if remind_time is None:
-            await ctx.respond(f"`{time}` is not a valid time.\n"
-                              f"Example: `3h`, `08:05:00`, `07/09/2021 3pm`",
-                              ephemeral=True)
+            await ictx.response.send_message(f"`{time}` is not a valid time.\n"
+                                             f"Example: `3h`, `08:05:00`, `07/09/2021 3pm`", ephemeral=True)
             return
 
         delta = remind_time - dt.now()
         if delta < timedelta(0):
-            await ctx.respond("You can't make a reminder to the past!",
-                              ephemeral=True)
+            await ictx.response.send_message("You can't make a reminder to the past!", ephemeral=True)
             return
 
         if len(message) > 199:
-            await ctx.respond("Message length must not exceed 200 characters!",
-                              ephemeral=True)
+            await ictx.response.send_message("Message length must not exceed 200 characters!", ephemeral=True)
             return
 
-        await ctx.defer()
+        await ictx.response.defer()
 
         if interval:
             interval = parsedate("in " + interval) - dt.now()
@@ -142,11 +136,10 @@ class RemindCommand(SlashCommand, name="remind"):
             interval = delta
 
         if repeat and interval < timedelta(hours=1, minutes=59):  # fp error
-            await ctx.send_followup("Repeat interval has to be longer than 2h!",
-                                    ephemeral=True)
+            await ictx.followup.send("Repeat interval has to be longer than 2h!", ephemeral=True)
             return
 
-        reminder = Reminder(discord_id=ctx.user.id,
+        reminder = Reminder(discord_id=ictx.user.id,
                             timestamp=remind_time,
                             message=message,
                             link='',
@@ -159,7 +152,7 @@ class RemindCommand(SlashCommand, name="remind"):
         if delta < timedelta(hours=1):
             await self.remind(reminder_id, delta)
 
-        response = await ctx.send_followup(
+        response = await ictx.followup.send(
             f"Your reminder for **{message}** has been set for "
             f"<t:{int(remind_time.timestamp())}>."
         )

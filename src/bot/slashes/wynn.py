@@ -1,8 +1,9 @@
 import random
 import time
-
 import aiohttp
-from discord import ApplicationContext, Option
+
+from discord import Interaction
+import discord.app_commands as slash
 
 from ..bot import EYESBot, SlashCommand
 from ..utils.paginator import ButtonPaginator
@@ -12,17 +13,16 @@ class SoulPointCommand(SlashCommand, name="sp"):
     def __init__(self, bot: EYESBot, guild_ids: list[int]):
         super().__init__(bot, guild_ids)
 
-        self.register(self.callback)
-
-    async def callback(self, ctx: ApplicationContext,
-                       offset: Option(int, "offset for soulpoint regen in seconds", required=False) = 60):
+    @slash.describe(offset="offset for soul point regen in seconds")
+    async def callback(self, ictx: Interaction,
+                       offset: int = 60):
         """Shows a list of worlds, sorted by closest to next soul point regen tick"""
-        await ctx.defer()
+        await ictx.response.defer()
 
         async with aiohttp.ClientSession() as session:
             async with session.get("https://athena.wynntils.com/cache/get/serverList") as res:
                 if not res.ok:
-                    return await ctx.edit("Fetching from SP API failed!", ephemeral=True)
+                    return await ictx.response.send_message("Fetching from SP API failed!", ephemeral=True)
                 data = await res.json()
 
         now = time.time_ns() // (10 ** 9)
@@ -32,5 +32,5 @@ class SoulPointCommand(SlashCommand, name="sp"):
 
         worlds, times = zip(*worlds)
         data = {"World": worlds, "Time": [f"{t // 60}m{t % 60}s" for t in map(lambda t: t + offset, times)]}
-        paginator = ButtonPaginator(ctx, f"Soul Point Regen", data, colour=random.getrandbits(24), text='')
+        paginator = ButtonPaginator(ictx, f"Soul Point Regen", data, colour=random.getrandbits(24), text='')
         await paginator.generate_embed().respond()

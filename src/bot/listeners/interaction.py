@@ -14,7 +14,7 @@ class InteractionListener:
     def __init__(self, bot: 'EYESBot'):
         self.bot = bot
 
-        self.bot.bot.add_listener(self.on_interaction)
+        self.bot.add_listener(self.on_interaction)
 
     @staticmethod
     async def role_action(member: Member, role_id: int, required_ids: list):
@@ -39,7 +39,7 @@ class InteractionListener:
         if interaction.guild is None:
             return
 
-        custom_id = getattr(interaction, "custom_id", None)
+        custom_id = interaction.data.get("custom_id")
         if custom_id is None or not custom_id.startswith('$'):
             return
 

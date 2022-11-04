@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import typing
 from typing import Set
 
@@ -31,6 +32,7 @@ class GuildPrefixManager:
         self.p2g = {}
         self.g2p = {}
 
+    def start(self):
         self.update().call_func()
         self.update().start()
 

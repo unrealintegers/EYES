@@ -1,4 +1,5 @@
-from discord import ApplicationContext, Option
+from discord import Interaction
+import discord.app_commands as slash
 
 from ..guild import GuildCommand
 from ...bot import EYESBot, SlashCommand
@@ -13,15 +14,13 @@ class GuildShortcutCommand(GuildCommand, SlashCommand, name="g"):
     def __init__(self, bot: EYESBot, guild_ids: list[int]):
         SlashCommand.__init__(self, bot, guild_ids)
 
-        self.register(self.callback)
-
-    async def callback(self, ctx: ApplicationContext,
-                       cmd: Option(str, "Shortcut command to execute")):
+    @slash.describe(cmd="shortcut command to execute")
+    async def callback(self, ictx: Interaction, cmd: str):
         """A shortcut to run various /guild commands"""
         command, guild = cmd.split()
         if command not in self.LOOKUP_DICT:
-            await ctx.respond("Command not found!", ephemeral=True)
+            await ictx.response.send_message("Command not found!", ephemeral=True)
             return
 
         callback = self.LOOKUP_DICT[command]
-        await callback(self, ctx, guild)
+        await callback(self, ictx, guild)

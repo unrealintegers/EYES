@@ -1,45 +1,53 @@
-from discord import ApplicationContext, Option
-from discord import Member
+from discord import Interaction, TextChannel, Permissions
 from discord import NotFound, HTTPException
+import discord.app_commands as slash
 
-from ..bot import SlashCommand, EYESBot
+from ..bot import SlashGroup, EYESBot
 from ..utils.autorolewizard import AutoroleWizard
 
 
-class AutoroleCommand(SlashCommand, name="autorole"):
+class AutoroleCommand(SlashGroup, name="autorole", guild_only=True, default_permissions=Permissions()):
     def __init__(self, bot: EYESBot, guild_ids: list[int]):
         super().__init__(bot, guild_ids)
 
-        self.group = self.bot.bot.create_group(
-            "autorole", "No Description", guild_ids
-        )
-        self.group.default_permission = False
-
-        self.group.command()(self.create)
-        self.group.command()(self.edit)
+        self.command()(self.create)
+        self.command()(self.edit)
 
     async def create(
-            self, ctx: ApplicationContext
+            self, ictx: Interaction
     ):
         """Creates a new autorole message."""
 
-        await ctx.defer()
-        if not isinstance(ctx.author, Member):
-            await ctx.respond("Cannot be used in a DM!")
+        await ictx.response.defer(ephemeral=True)
+
+        if not isinstance(ictx.channel, TextChannel):
+            await ictx.edit_original_response(content="Can only be used in text channels!")
             return
 
-        await AutoroleWizard.new(self.bot, ctx.author, ctx.channel)
-        await ctx.delete()
+        ar = await AutoroleWizard.new(self.bot, ictx.user, ictx.channel)
+        await ictx.edit_original_response(content=ar.thread.mention)
 
+    @slash.describe(channel="channel_id of message", message="message_id of message")
     async def edit(
-            self, ctx: ApplicationContext,
-            message: Option(int, "message_id of message")
+            self, ictx: Interaction,
+            channel: str, message: str
     ):
-        await ctx.defer()
+        """Edits an existing autorole message."""
+        await ictx.response.defer(ephemeral=True)
+
+        if not isinstance(ictx.channel, TextChannel):
+            await ictx.edit_original_response(content="Command can only be used in Text Channels.")
+            return
+
+        if not message.isdecimal():
+            await ictx.edit_original_response(content="Message must be an integer!")
+            return
+
         try:
-            original = await ctx.channel.fetch_message(message)
-            await AutoroleWizard.from_msg(self.bot, ctx.author, ctx.channel, original)
+            origch = await ictx.guild.fetch_channel(int(channel))
+            original = await origch.fetch_message(int(message))
         except (NotFound, HTTPException):
-            await ctx.respond("Message not found!", ephemeral=True)
-        finally:
-            await ctx.delete()
+            await ictx.edit_original_response(content="Message not found!")
+        else:
+            ar = await AutoroleWizard.from_msg(self.bot, ictx.user, ictx.channel, original)
+            await ictx.edit_original_response(content=ar.thread.mention)

@@ -1,28 +1,23 @@
 import io
 
-from discord import ApplicationContext, Option
+from discord import Interaction
 from discord import File
 
 from ..bot import EYESBot, SlashCommand
 
 
-class EvaluateCommand(SlashCommand, name="evaluate"):
+class EvaluateCommand(SlashCommand, name="eval"):
     def __init__(self, bot: EYESBot, guild_ids: list[int]):
         super().__init__(bot, guild_ids)
 
         self.result = None
 
-        self.register(self._eval, name="eval")
-
-    async def _eval(
-            self, ctx: ApplicationContext,
-            command: Option(str, "&h")
-    ):
-        if ctx.user.id not in [330509305663193091, 475440146221760512]:
-            await ctx.respond("What do you think you're doing?",
-                              ephemeral=True)
+    async def callback(self, ictx: Interaction, command: str):  # noqa
+        """Evaluate"""
+        if ictx.user.id not in [330509305663193091, 475440146221760512]:
+            await ictx.response.send_message("What do you think you're doing?", ephemeral=True)
             return
-        """evaluate"""
+
         ephemeral = (command[0] == "&")
         if ephemeral:
             command = command[1:]
@@ -38,6 +33,6 @@ class EvaluateCommand(SlashCommand, name="evaluate"):
 
         if len(self.result) > 2000:
             fp = io.BytesIO(self.result.encode('utf-8'))
-            await ctx.respond(file=File(fp, "output.txt"))
+            await ictx.response.send_message(file=File(fp, "output.txt"))
         else:
-            await ctx.respond(self.result, ephemeral=ephemeral)
+            await ictx.response.send_message(self.result, ephemeral=ephemeral)
