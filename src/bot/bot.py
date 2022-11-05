@@ -25,7 +25,7 @@ class EYESBot(commands.Bot):
         self.logger.setLevel(logging.DEBUG)
         handler = logging.StreamHandler()
         handler.setLevel(logging.DEBUG)
-        handler.setFormatter(logging.Formatter("< %(asctime)s | EYES | %(levelname)4.4s > %(message)s ",
+        handler.setFormatter(logging.Formatter(f"< %(asctime)s | {self.user.name} | %(levelname)4.4s > %(message)s ",
                                                datefmt="%y-%m-%d %H:%M:%S"))
         self.logger.addHandler(handler)
 
