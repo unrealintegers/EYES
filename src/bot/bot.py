@@ -21,10 +21,12 @@ class EYESBot(commands.Bot):
         self.remove_command('help')
 
         # Setup logging
-        self.logger = logging.Logger('main')
+        self.logger = logging.getLogger('EYES')
         self.logger.setLevel(logging.DEBUG)
         handler = logging.StreamHandler()
-        handler.setFormatter(logging.Formatter("%(message)s", "%m/%d %H:%M:%S"))
+        handler.setLevel(logging.DEBUG)
+        handler.setFormatter(logging.Formatter("< %(asctime)s | EYES | %(levelname)4.4s > %(message)s ",
+                                               datefmt="%y-%m-%d %H:%M:%S"))
         self.logger.addHandler(handler)
 
         # Create managers
