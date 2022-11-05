@@ -5,7 +5,7 @@ from ..guild import GuildCommand
 from ...bot import EYESBot, SlashCommand
 
 
-class GuildShortcutCommand(GuildCommand, SlashCommand, name="g"):
+class GuildShortcutCommand(SlashCommand, GuildCommand, name="g"):
     LOOKUP_DICT = {
         'o': GuildCommand.online,
         'p': GuildCommand.players
