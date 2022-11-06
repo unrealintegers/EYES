@@ -64,6 +64,10 @@ class GuildUpdater(BotTask):
         self.bot.db.path = None
         return self.bot.db.child('wynncraft').child('guilds')
 
+    def lookup_path(self):
+        self.bot.db.path = None
+        return self.bot.db.child('wynncraft').child('lookup')
+
     def deleted_path(self):
         self.bot.db.path = None
         return self.bot.db.child('wynncraft').child('deleted_guilds')
@@ -149,6 +153,10 @@ class GuildUpdater(BotTask):
         memberdict_old = self.guild_path().child(guild_name).child('members').get().val() or {}
         num_changes = len(memberdict.keys() | memberdict_old.keys()) - len(memberdict.keys() & memberdict_old.keys())
         self.guild_path().child(guild_name).child('members').set(memberdict)
+
+        # Member-Guild Lookup
+        usernamedict = {member['name']: guild_name for member in memberdict.values()}
+        self.lookup_path().update(usernamedict)
 
         # Calculate XP transitions
         await self.update_xp(guild_name, memberdict_old, memberdict)
