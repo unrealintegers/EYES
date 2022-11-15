@@ -2,6 +2,7 @@ from typing import Optional
 
 from collections import defaultdict
 from datetime import datetime as dt
+from dateparser import parse as parsedate
 
 from discord import Interaction
 from discord import Member, Webhook
@@ -50,3 +51,26 @@ class ImpersonateCommand(SlashCommand, name="impersonate", guild_only=True):
         )
 
         await ictx.response.send_message("Done", ephemeral=True)
+
+
+class TimestampCommand(SlashCommand, name="timestamp"):
+    def __init__(self, bot: EYESBot, guild_ids: list[int]):
+        super().__init__(bot, guild_ids)
+
+    def tz_path(self):
+        return self.bot.db.child("config").child("user")
+
+    @slash.describe(time="time to get timestamp for")
+    async def callback(self, ictx: Interaction, time: str):
+        """Helps create Discord timestamps from a human-readable date."""
+        tz = self.tz_path().child(ictx.user.id).child("tz").get().val()
+        if tz is None:
+            await ictx.response.send_message("You have not set your time zone yet! "
+                                             "Run `/config set path:tz value:<your timezone> scope:user` to set it.",
+                                             ephemeral=True)
+            return
+
+        time_ = parsedate(time, settings={'TIMEZONE': tz, 'RETURN_AS_TIMEZONE_AWARE': True})
+        unix = int(time_.timestamp())
+        await ictx.response.send_message(f"<t:{unix}> - `<t:{unix}>`\n"
+                                         f"<t:{unix}:R> - `<t:{unix}:R>`", ephemeral=True)
