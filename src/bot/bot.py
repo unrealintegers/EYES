@@ -25,7 +25,7 @@ class EYESBot(commands.Bot):
         self.logger.setLevel(logging.DEBUG)
         handler = logging.StreamHandler()
         handler.setLevel(logging.DEBUG)
-        handler.setFormatter(logging.Formatter(f"< %(asctime)s | {self.user.name} | %(levelname)4.4s > %(message)s ",
+        handler.setFormatter(logging.Formatter(f"< %(asctime)s | EYES | %(levelname)4.4s > %(message)s ",
                                                datefmt="%y-%m-%d %H:%M:%S"))
         self.logger.addHandler(handler)
 
@@ -65,7 +65,7 @@ class EYESBot(commands.Bot):
             self.tasks[sub_cls.__name__] = sub_cls(self)
 
     async def on_ready(self):
-        self.logger.info("Connected")
+        self.logger.info(f"Logged in as {self.user.name}#{self.user.discriminator}")
 
         self.players_manager.run()
         self.prefixes_manager.start()
