@@ -123,7 +123,7 @@ class GuildUpdater(BotTask):
 
     async def update_guild(self, guild_name) -> Optional[float]:
         """Fetches 1 guild from the API and updates it."""
-        self.bot.logger.info(f"Updating Guild {guild_name}.")
+        # self.bot.logger.info(f"Updating Guild {guild_name}.")
 
         url = f"https://api.wynncraft.com/public_api.php?action=guildStats&command={guild_name}"
         async with aiohttp.ClientSession() as session:
