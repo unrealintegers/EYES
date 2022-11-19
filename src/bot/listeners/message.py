@@ -63,9 +63,8 @@ class MessageListener:
 
         # Tries to find the existing webhook otherwise creates one
         webhooks = await message.channel.webhooks()
-        if webhooks:
-            webhook = webhooks[0]
-        else:
+        webhook = utils.find(lambda w: w.token is not None, webhooks)
+        if webhook is None:
             webhook = await message.channel.create_webhook(name="EYES")
 
         avatar = message.author.avatar.url if message.author.avatar is not None else MISSING
