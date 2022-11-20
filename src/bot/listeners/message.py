@@ -24,6 +24,13 @@ class MessageListener:
     async def update_replacements(self):
         """Updates the replacements dict with guilds,
            mapping each starting role to a list of members with the replaced role."""
+        def insert_members(roles, replacement_dict):
+            if 'role' in replacement_dict:
+                replacement_dict['members'] = utils.get(roles, id=int(replacement_dict['role'])).members
+            else:
+                replacement_dict['members'] = []
+
+            return replacement_dict
 
         replacements = self.bot.db.child('config').child('onlinepings').child('guild').get().val()
         for guild_id in replacements:
@@ -32,8 +39,8 @@ class MessageListener:
                 continue
 
             roles = await guild.fetch_roles()
-            self.replacements[int(guild_id)] = {utils.get(roles, id=int(r1)): utils.get(roles, id=int(r2)).members
-                                           for r1, r2 in replacements[guild_id].items()}
+            self.replacements[int(guild_id)] = {utils.get(roles, id=int(k)): insert_members(roles, v)
+                                                for k, v in replacements[guild_id].items()}
 
     async def on_message(self, message: Message):
         # a lazy check before we start replacing
@@ -52,8 +59,9 @@ class MessageListener:
         """
 
         replacements = self.replacements.get(message.guild.id, {})
-        included_roles = list(filter(lambda r: r in replacements, message.role_mentions))
-        eligible_members = sum(map(replacements.get, included_roles), [])
+        eligible_replacements = {k for k, v in replacements.items() if self.eligible_replacement(message, v)}
+        included_roles = list(filter(lambda r: r in eligible_replacements, message.role_mentions))
+        eligible_members = sum(map(lambda r: replacements.get(r, {}).get('members', []), included_roles), [])
         online_members = set(filter(lambda m: m.status is Status.online, eligible_members))
 
         if not online_members:
@@ -71,3 +79,20 @@ class MessageListener:
         ping_msg = await webhook.send(ping, username=message.author.display_name, avatar_url=avatar, wait=True)
         if ping_msg is not None:
             await ping_msg.delete()
+
+    def eligible_replacement(self, message: Message, replacement: dict):
+        allowed_channels = replacement.get('allowed_channels', [])
+        disallowed_channels = replacement.get('disallowed_channels', [])
+        allowed_roles = replacement.get('allowed_roles', [])
+        disallowed_roles = replacement.get('disallowed_roles', [])
+
+        if allowed_channels and message.channel.id not in allowed_channels:
+            return False
+        if disallowed_channels and message.channel.id in disallowed_channels:
+            return False
+        if allowed_roles and not any(str(r.id) in allowed_roles for r in message.author.roles):
+            return False
+        if disallowed_roles and any(str(r.id) in disallowed_roles for r in message.author.roles):
+            return False
+
+        return True
