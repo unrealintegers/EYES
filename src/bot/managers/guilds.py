@@ -22,7 +22,7 @@ class GuildMemberManager:
         return self.bot.db.child('wynncraft').child('guilds')
 
     def get(self, guild_name) -> Set[GuildMember]:
-        members = self.path().child(guild_name).child('members').get().val() or []
+        members = self.path().child(guild_name).child('members').get().val() or {}
         return set(GuildMember(uuid=k, **v) for k, v in members.items())
 
 
