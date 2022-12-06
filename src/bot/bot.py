@@ -8,7 +8,7 @@ import pyrebase as pyrebase4
 from discord import Intents
 from discord.ext import commands
 
-from .listeners import InteractionListener
+from .listeners import InteractionListener, MessageListener
 from .managers import ConfigManager, GuildPrefixManager, GuildMemberManager, PlayerManager
 from .models import SlashCommand, BotTask, SlashGroup
 
@@ -25,7 +25,7 @@ class EYESBot(commands.Bot):
         self.logger.setLevel(logging.DEBUG)
         handler = logging.StreamHandler()
         handler.setLevel(logging.DEBUG)
-        handler.setFormatter(logging.Formatter("< %(asctime)s | EYES | %(levelname)4.4s > %(message)s ",
+        handler.setFormatter(logging.Formatter(f"< %(asctime)s | EYES | %(levelname)4.4s > %(message)s ",
                                                datefmt="%y-%m-%d %H:%M:%S"))
         self.logger.addHandler(handler)
 
@@ -34,6 +34,7 @@ class EYESBot(commands.Bot):
         self.prefixes_manager = GuildPrefixManager(self)
         self.players_manager = PlayerManager(self)
         self.reaction = InteractionListener(self)
+        self.msg = MessageListener(self)
 
         self.tasks: dict[str, BotTask] = {}
 
@@ -65,10 +66,11 @@ class EYESBot(commands.Bot):
             self.tasks[sub_cls.__name__] = sub_cls(self)
 
     async def on_ready(self):
-        self.logger.info("Connected")
+        self.logger.info(f"Logged in as {self.user.name}#{self.user.discriminator}")
 
         self.players_manager.run()
         self.prefixes_manager.start()
+        await self.msg.update_replacements()
 
         await self.instantiate_commands()
         await self.add_tasks()

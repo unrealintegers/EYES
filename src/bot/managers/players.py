@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime
 import time
 import typing
 from functools import reduce
@@ -19,6 +20,8 @@ class PlayerManager:
         self.dict: dict = {}
         self.all: set[str] = set()
         self.worlds: dict = {}
+
+        self.last_update: datetime = datetime.now()
 
     def run(self):
         asyncio.create_task(self.update())
@@ -42,4 +45,6 @@ class PlayerManager:
             playtime.update(self.all)
 
         await asyncio.sleep(30 - (time.perf_counter() - t))
+        self.last_update = datetime.now()
+
         asyncio.create_task(self.update())
