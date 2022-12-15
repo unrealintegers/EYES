@@ -1,6 +1,7 @@
+from collections import defaultdict
+
 from datetime import datetime as dt
 from datetime import timedelta as td
-from typing import List
 
 import aiocron
 from pytz import utc
@@ -18,7 +19,7 @@ class PlayerPlaytimeUpdater(BotTask):
         self.bot.db.path = None
         return self.bot.db.child('wynncraft').child('playtimeraw')
 
-    def update(self, players: List[str]):
+    def update(self, players: list[str]):
         now = int(dt.utcnow().timestamp())
         update_dict = {f'{k}/{now}/': True for k in players}
         try:
@@ -27,7 +28,7 @@ class PlayerPlaytimeUpdater(BotTask):
             self.bot.logger.error(f"Connection Error while updating: {e}")
 
 
-class PlayerPlaytimeGrouper(BotTask):
+class PlaytimeGrouper(BotTask):
     """
     Groups players' playtime into larger blocks:
       -  1d for older than 30d
@@ -48,6 +49,10 @@ class PlayerPlaytimeGrouper(BotTask):
         self.bot.db.path = None
         return self.bot.db.child('wynncraft').child('playtime').child('players')
 
+    def guildpath(self):
+        self.bot.db.path = None
+        return self.bot.db.child("wynncraft").child("playtime").child("guilds")
+
     # Short: Update every 1h
     def update_short(self):
         """Processes raw playtime data to usable playtime data with 1h granularity."""
@@ -62,6 +67,8 @@ class PlayerPlaytimeGrouper(BotTask):
             self.path().update(update_dict)
             self.rawpath().remove()
 
+            self.update_guild(data)
+
         return wrapper
 
     # Long: Update every 1d
@@ -71,3 +78,18 @@ class PlayerPlaytimeGrouper(BotTask):
             pass
 
         return wrapper
+
+    def update_guild(self, data: dict[str, dict]):
+        """Updates the total playtime of each guild."""
+
+        one_hour_ago = int((dt.utcnow() - td(hours=1)).timestamp())
+        lookups = self.bot.db.child('wynncraft').child('lookup').get().val()
+
+        guild_playtimes = defaultdict(int)
+        for player, playtimes in data.items():
+            guild = lookups.get(player)
+            if guild is not None:
+                guild_playtimes[guild] += len(playtimes)
+
+        update_dict = {f"{one_hour_ago}/{g}/": v for g, v in guild_playtimes.items()}
+        self.guildpath().update(update_dict)
