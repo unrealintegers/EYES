@@ -9,7 +9,7 @@ from discord import Intents
 from discord.ext import commands
 
 from .listeners import InteractionListener, MessageListener
-from .managers import ConfigManager, GuildPrefixManager, GuildMemberManager, PlayerManager
+from .managers import ConfigManager, GuildPrefixManager, GuildMemberManager, PlayerManager, MapManager
 from .models import SlashCommand, BotTask, SlashGroup
 
 
@@ -33,6 +33,7 @@ class EYESBot(commands.Bot):
         self.guilds_manager = GuildMemberManager(self)
         self.prefixes_manager = GuildPrefixManager(self)
         self.players_manager = PlayerManager(self)
+        self.map_manager = MapManager(self)
         self.reaction = InteractionListener(self)
         self.msg = MessageListener(self)
 
@@ -70,10 +71,14 @@ class EYESBot(commands.Bot):
 
         self.players_manager.run()
         self.prefixes_manager.start()
+        self.map_manager.init()
         await self.msg.update_replacements()
 
         await self.instantiate_commands()
         await self.add_tasks()
+
+        await self.tasks['WarTracker'].update_channels()
+        await self.tasks['WarTracker'].update_wars()
 
         await self.tree.sync()
 

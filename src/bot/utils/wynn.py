@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from ast import literal_eval as ieval
+import base64, zlib
+
 from datetime import datetime as dt
 
 from dateutil import parser as dtparser
@@ -52,3 +55,7 @@ class GuildMember:
         del v['uuid']
         v['joined'] = v['joined'].timestamp()
         return k, v
+
+
+def parse_map_string(ms):
+    return ieval(zlib.decompress(base64.b85decode(ms)).decode('ascii'))

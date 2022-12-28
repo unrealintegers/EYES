@@ -1,4 +1,5 @@
 import json
+import zlib
 
 from discord import Interaction
 import discord.app_commands as slash
@@ -8,6 +9,7 @@ import pytz
 
 from ..bot import EYESBot, SlashGroup
 from ..models import choice
+from ..utils.wynn import parse_map_string
 
 
 class ConfigCommand(SlashGroup, name="config"):
@@ -16,6 +18,7 @@ class ConfigCommand(SlashGroup, name="config"):
 
         self.command(name="set")(self.set_)
         self.command(name="timezone")(self.set_timezone)
+        self.command(name="claims")(self.update_map)
 
     @slash.describe(path="config path, use / for separator",
                     value="JSON value to set",
@@ -79,3 +82,23 @@ class ConfigCommand(SlashGroup, name="config"):
                 "for a list, or [timezonedb](<https://timezonedb.com/>) uses your current location to show you your "
                 "time zone. (It should look like `US/Eastern` or `Europe/Paris` with a slash)", ephemeral=True
             )
+
+    @slash.describe(map_str="b85 zlib")
+    async def update_map(self, ictx: Interaction, map_str: str):
+        if ictx.user.id != 330509305663193091:
+            await ictx.response.send_message(f"What do you think you are doing?", ephemeral=True)
+
+        try:
+            map_dict = parse_map_string(map_str)
+        except (zlib.error, TypeError, SyntaxError) as e:
+            await ictx.response.send_message(f"Encountered {type(e)} while parsing map string!", ephemeral=True)
+            return
+        if not isinstance(map_dict, dict):
+            await ictx.response.send_message(f"Wrong data type. Expected `dict`, found `{type(map_dict)}.`",
+                                             ephemeral=True)
+            return
+
+        map_dict = {k: '_' if v is None else v for k, v in map_dict.items()}
+        self.bot.db.child('config').child('claims').set(map_dict)
+
+        await ictx.response.send_message("Successfully updated the map.", ephemeral=True)

@@ -1,4 +1,5 @@
 __all__ = (
     "guild",
-    "playtime"
+    "playtime",
+    "wars"
 )

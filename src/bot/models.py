@@ -55,5 +55,9 @@ class BotTask:
         self.bot = bot
 
 
+class WynncraftAPI:
+    TERRITORIES = r"https://api.wynncraft.com/public_api.php?action=territoryList"
+
+
 def choice(name):
     return Choice(name=name, value=name)
