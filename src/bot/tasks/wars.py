@@ -14,7 +14,7 @@ class WarTracker(BotTask):
         super().__init__(bot)
 
         self.last_territories = self.get_territories()
-        self.last_update: datetime = datetime.now()
+        # self.last_update: datetime = datetime.now()
         self.territory_counts = defaultdict(int)
 
         self.broadcast_channels = []
@@ -48,7 +48,7 @@ class WarTracker(BotTask):
             return None
 
         territories = resp.json()['territories']
-        return {t: d['guild'] for t, d in territories.items()}
+        return {t: (d['guild'], d['acquired']) for t, d in territories.items()}
 
     def generate_string(self, g_from, g_to, prefix_from, prefix_to, territory):
         template = "```ansi\n{}[{{}}m{}[0m[{}] -> [{{}}m{}[0m[{}]{} | [{{}}{}m{}\n```"
@@ -87,9 +87,18 @@ class WarTracker(BotTask):
     async def update_wars(self):
         t = time.perf_counter()
 
-        territories = self.get_territories()
-        transfers = {k: (self.last_territories[k], territories[k]) for k in self.last_territories
-                     if self.last_territories[k] != territories[k]}
+        try:
+            territories = self.get_territories()
+        except requests.exceptions.ConnectionError:
+            await asyncio.sleep(10 - (time.perf_counter() - t))
+            asyncio.create_task(self.update_wars())
+            return
+
+        territories = {k: (terr, t) if self.last_territories[k][1] < territories[k][1] else self.last_territories[k]
+                       for k, (terr, t) in territories.items()}
+        transfers = {k: (self.last_territories[k][0], territories[k][0]) for k in self.last_territories
+                     if self.last_territories[k][0] != territories[k][0]
+                     and self.last_territories[k][1] < territories[k][1]}
         self.territory_counts = defaultdict(int)
         for _, g in self.last_territories.items():
             self.territory_counts[g] += 1
@@ -103,7 +112,7 @@ class WarTracker(BotTask):
                 await channel.send(msg_content)
 
         await asyncio.sleep(10 - (time.perf_counter() - t))
-        self.last_update = datetime.now()
+        # self.last_update = datetime.now()
         self.last_territories = territories
 
         asyncio.create_task(self.update_wars())
