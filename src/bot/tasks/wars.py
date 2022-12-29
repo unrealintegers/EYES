@@ -28,14 +28,19 @@ class WarTracker(BotTask):
             else:
                 self.bot.logger.info(f"Invalid Guild ID Format {g_id} for war channels.")
                 continue
-            for ch_id, gu_name in v.items():
+            for ch_id, gu_dict in v.items():
+                gu_name = gu_dict.get('guild', '____')
+                terr_filter = list(gu_dict.get('territories', {}).keys()) or []
+                claim_filter = list(gu_dict.get('claim', {}).keys()) or []
+                claim_filter = sum((self.bot.map_manager.claim_guilds.get(g, []) for g in claim_filter), [])
+                final_terr_filter = terr_filter or claim_filter
                 if ch_id.isdecimal():
                     ch_id = int(ch_id)
                 else:
                     self.bot.logger.info(f"Invalid Channel ID Format {ch_id} for war channels.")
                 if g := self.bot.get_guild(g_id):
                     if ch := g.get_channel(ch_id):
-                        self.broadcast_channels.append((gu_name, ch))
+                        self.broadcast_channels.append((ch, gu_name, final_terr_filter))
                     else:
                         self.bot.logger.info(f"Channel {ch_id} not found for war channels.")
                 else:
@@ -107,7 +112,10 @@ class WarTracker(BotTask):
             prefix_from = self.bot.prefixes_manager.g2p.get(g_from, '????')
             prefix_to = self.bot.prefixes_manager.g2p.get(g_to, '????')
             terr_template = self.generate_string(g_from, g_to, prefix_from, prefix_to, terr)
-            for g_home, channel in self.broadcast_channels:
+            for channel, g_home, terr_filter in self.broadcast_channels:
+                if terr not in terr_filter:
+                    continue
+
                 msg_content = self.format_generated_string(terr_template, terr, prefix_from, prefix_to, g_home)
                 await channel.send(msg_content)
 
