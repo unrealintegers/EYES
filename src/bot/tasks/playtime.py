@@ -89,7 +89,7 @@ class PlaytimeGrouper(BotTask):
         for player, playtimes in data.items():
             guild = lookups.get(player)
             if guild is not None:
-                guild_playtimes[guild] += len(playtimes)
+                guild_playtimes[guild] += 0.5 * len(playtimes)
 
         update_dict = {f"{one_hour_ago}/{g}/": v for g, v in guild_playtimes.items()}
         self.guildpath().update(update_dict)
