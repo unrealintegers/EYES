@@ -15,6 +15,10 @@ class PlayerPlaytimeUpdater(BotTask):
     def __init__(self, bot: EYESBot):
         super().__init__(bot)
 
+        self.iters = 0
+        self.last_iter = dt.now()
+        self.start_iter = dt.now()
+
     def path(self):
         self.bot.db.path = None
         return self.bot.db.child('wynncraft').child('playtimeraw')
@@ -22,10 +26,18 @@ class PlayerPlaytimeUpdater(BotTask):
     def update(self, players: list[str]):
         now = int(dt.utcnow().timestamp())
         update_dict = {f'{k}/{now}/': True for k in players}
+
         try:
             self.path().update(update_dict)
         except ConnectionError as e:
             self.bot.logger.error(f"Connection Error while updating: {e}")
+        else:
+            self.iters += 1
+            now = dt.now()
+            time_iter = now - self.last_iter
+            self.last_iter = now
+            self.bot.logger.debug(f"this={time_iter.total_seconds():.2f},"
+                                  f"avg={(now - self.start_iter).total_seconds() / self.iters:.2f}")
 
 
 class PlaytimeGrouper(BotTask):
