@@ -1,4 +1,3 @@
-import asyncio
 import heapq
 from datetime import datetime as dt
 from datetime import timedelta as td
@@ -58,7 +57,7 @@ class GuildUpdater(BotTask):
         self.pq = []
         self.build_pq()
 
-        asyncio.create_task(self.next())
+        self.next().start()
 
     def guild_path(self):
         self.bot.db.path = None
@@ -80,19 +79,19 @@ class GuildUpdater(BotTask):
         self.bot.db.path = None
         return self.bot.db.child('wynncraft').child('xp')
 
-    async def next(self):
-        if self.pq:  # is not empty
-            # We check that it is in fact time to update the smallest item
-            if dt.now().timestamp() > self.pq[0][0]:
-                # Gets the first element and updates it
-                _, guild_name = heapq.heappop(self.pq)
-                if next_update := await self.update_guild(guild_name):
-                    # Re-adds it back to the queue with the scheduled next update
-                    heapq.heappush(self.pq, (next_update, guild_name))
+    def next(self):
+        @aiocron.crontab('* * * * * */3', start=False)
+        async def callback():
+            if self.pq:  # is not empty
+                # We check that it is in fact time to update the smallest item
+                if dt.now().timestamp() > self.pq[0][0]:
+                    # Gets the first element and updates it
+                    _, guild_name = heapq.heappop(self.pq)
+                    if next_update := await self.update_guild(guild_name):
+                        # Re-adds it back to the queue with the scheduled next update
+                        heapq.heappush(self.pq, (next_update, guild_name))
 
-        # 1 request per 5s
-        await asyncio.sleep(5)
-        asyncio.create_task(self.next())
+        return callback
 
     def build_pq(self):
         guilds = self.guild_path().get().each()

@@ -69,7 +69,6 @@ class EYESBot(commands.Bot):
     async def on_ready(self):
         self.logger.info(f"Logged in as {self.user.name}#{self.user.discriminator}")
 
-        self.players_manager.run()
         self.prefixes_manager.start()
         self.map_manager.init()
         await self.msg.update_replacements()
@@ -78,7 +77,6 @@ class EYESBot(commands.Bot):
         await self.add_tasks()
 
         await self.tasks['WarTracker'].update_channels()
-        await self.tasks['WarTracker'].update_wars()
 
         await self.tree.sync()
 

@@ -1,8 +1,7 @@
-import asyncio
 from collections import defaultdict
-import time
 from datetime import datetime
 
+import aiocron
 import requests
 
 from ..bot import BotTask, EYESBot
@@ -17,6 +16,8 @@ class WarTracker(BotTask):
         self.territory_counts = defaultdict(int)
 
         self.broadcast_channels = []
+
+        self.update_wars().start()
 
     async def update_channels(self):
         channels_data = self.bot.db.child("config").child("warchannels").get().val()
@@ -75,7 +76,7 @@ class WarTracker(BotTask):
 
     def get_territory_color(self, territory):
         return '37' if self.bot.map_manager.owns("NONE", territory) else \
-               '33' if self.bot.map_manager.is_ffa(territory) else '34'
+            '33' if self.bot.map_manager.is_ffa(territory) else '34'
 
     def get_territory_style(self, territory, prefix_home):
         return '1;' if self.bot.map_manager.owns(prefix_home, territory) else ''
@@ -86,37 +87,34 @@ class WarTracker(BotTask):
         style_terr = self.get_territory_style(territory, prefix_home)
         return format_string.format(fmt_from, fmt_to, style_terr)
 
-    async def update_wars(self):
-        t = time.perf_counter()
+    def update_wars(self):
+        @aiocron.crontab('* * * * * */10', start=False)
+        async def callback():
+            try:
+                territories = self.get_territories()
+            except requests.exceptions.ConnectionError:
+                return
 
-        try:
-            territories = self.get_territories()
-        except requests.exceptions.ConnectionError:
-            await asyncio.sleep(10 - (time.perf_counter() - t))
-            asyncio.create_task(self.update_wars())
-            return
+            territories = {k: (terr, t) if self.last_territories[k][1] < territories[k][1] else self.last_territories[k]
+                           for k, (terr, t) in territories.items()}
+            transfers = {k: (self.last_territories[k][0], territories[k][0]) for k in self.last_territories
+                         if self.last_territories[k][0] != territories[k][0]
+                         and self.last_territories[k][1] < territories[k][1]}
+            self.territory_counts = defaultdict(int)
+            for _, (g, _) in self.last_territories.items():
+                self.territory_counts[g] += 1
 
-        territories = {k: (terr, t) if self.last_territories[k][1] < territories[k][1] else self.last_territories[k]
-                       for k, (terr, t) in territories.items()}
-        transfers = {k: (self.last_territories[k][0], territories[k][0]) for k in self.last_territories
-                     if self.last_territories[k][0] != territories[k][0]
-                     and self.last_territories[k][1] < territories[k][1]}
-        self.territory_counts = defaultdict(int)
-        for _, (g, _) in self.last_territories.items():
-            self.territory_counts[g] += 1
+            for terr, (g_from, g_to) in transfers.items():
+                prefix_from = self.bot.prefixes_manager.g2p.get(g_from, '????')
+                prefix_to = self.bot.prefixes_manager.g2p.get(g_to, '????')
+                terr_template = self.generate_string(g_from, g_to, prefix_from, prefix_to, terr)
+                for channel, g_home, terr_filter in self.broadcast_channels:
+                    if terr_filter != [] and terr not in terr_filter:
+                        continue
 
-        for terr, (g_from, g_to) in transfers.items():
-            prefix_from = self.bot.prefixes_manager.g2p.get(g_from, '????')
-            prefix_to = self.bot.prefixes_manager.g2p.get(g_to, '????')
-            terr_template = self.generate_string(g_from, g_to, prefix_from, prefix_to, terr)
-            for channel, g_home, terr_filter in self.broadcast_channels:
-                if terr_filter != [] and terr not in terr_filter:
-                    continue
+                    msg_content = self.format_generated_string(terr_template, terr, prefix_from, prefix_to, g_home)
+                    await channel.send(msg_content)
 
-                msg_content = self.format_generated_string(terr_template, terr, prefix_from, prefix_to, g_home)
-                await channel.send(msg_content)
+            self.last_territories = territories
 
-        await asyncio.sleep(10 - (time.perf_counter() - t))
-        self.last_territories = territories
-
-        asyncio.create_task(self.update_wars())
+        return callback
