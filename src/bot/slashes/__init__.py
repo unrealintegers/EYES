@@ -4,6 +4,7 @@ __all__ = (
     "config",
     "general",
     "guild",
+    "guildsplaytime",
     "moderation",
     "playtime",
     "wynn"
