@@ -32,8 +32,8 @@ class GuildsPlaytimeCommand(SlashCommand, name="guildsplaytime"):
                 guilds_playtimes[k] += round(v)
 
         guilds, pts = zip(*sorted(guilds_playtimes.items(), key=lambda x: (-x[1], x[0])))
-        per_h = [round(pt / days / 60 / 24, 3) for pt in pts]
-        data = {"Guild": guilds, "Playtime": pts, "Playtime/h": per_h}
+        avg_online = [round(pt / days / 60 / 24, 3) for pt in pts]
+        data = {"Guild": guilds, "Playtime": pts, "Average Online": avg_online}
 
         paginator = ButtonPaginator(ictx, "Total Playtime of Guilds", data, text='')
 
