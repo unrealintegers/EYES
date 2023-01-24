@@ -50,6 +50,30 @@ class SlashGroup(slash.Group):
         super().__init_subclass__(name=name, description="<None>", **kwargs)
 
 
+class ContextMenuCommand:
+    # Dynamic Parameters
+    def __init__(self, bot: "EYESBot", guild_ids: list[int]):
+        self.bot = bot
+
+        self._command = bot.tree.context_menu(name=self.__name, guilds=guild_ids)(self.callback)  # type: ignore
+        self._command.default_permissions = self.__permissions
+        self._command.guild_only = self.__guild_only
+
+    # Static Parameters
+    def __init_subclass__(cls, *,
+                          name: str = None,
+                          default_permissions: Permissions = None,
+                          guild_only: bool = False,
+                          **kwargs):
+        cls.__name = name or cls.__name__.lower()
+        cls.__permissions = default_permissions
+        cls.__guild_only = guild_only
+
+    # Override in Subclass
+    async def callback(self, ictx: Interaction, message_or_user):
+        pass
+
+
 class BotTask:
     def __init__(self, bot: "EYESBot"):
         self.bot = bot

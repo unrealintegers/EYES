@@ -10,7 +10,7 @@ from discord.ext import commands
 
 from .listeners import InteractionListener, MessageListener
 from .managers import ConfigManager, GuildPrefixManager, GuildMemberManager, PlayerManager, MapManager
-from .models import SlashCommand, BotTask, SlashGroup
+from .models import SlashCommand, ContextMenuCommand, BotTask, SlashGroup
 
 
 class EYESBot(commands.Bot):
@@ -57,6 +57,9 @@ class EYESBot(commands.Bot):
             sub_cls(self, [])
 
         for sub_cls in SlashGroup.__subclasses__():
+            sub_cls(self, [])
+
+        for sub_cls in ContextMenuCommand.__subclasses__():
             sub_cls(self, [])
 
         # if guild_dict:
