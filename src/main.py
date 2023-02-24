@@ -5,7 +5,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 if __name__ == "__main__":
-    # Import all slash commands and tasks so they get recognised as subclasses
+    # Import all slash commands and tasks, so they get recognised as subclasses
+    from bot.non_slashes import *  # noqa
     from bot.slashes import *  # noqa
     from bot.slashes.shortcuts import *  # noqa
     from bot.tasks import *  # noqa
