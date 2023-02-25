@@ -1,3 +1,5 @@
+import functools
+import operator
 import random
 import time
 from collections import OrderedDict
@@ -5,11 +7,11 @@ from datetime import datetime as dt
 from itertools import product
 from typing import List, Dict
 
-from discord import Interaction
-from discord import Embed
-from discord.utils import escape_markdown
-from discord.app_commands import Choice
 import discord.app_commands as slash
+from discord import Embed
+from discord import Interaction
+from discord.app_commands import Choice
+from discord.utils import escape_markdown
 from fuzzywuzzy import fuzz, process
 
 from ..bot import EYESBot, SlashGroup
@@ -29,6 +31,9 @@ class GuildCommand(SlashGroup, name="guild"):
 
         playtime = self.command()(self.playtime)
         playtime.autocomplete("guild")(self.guild_autocompleter)
+
+        xp = self.command()(self.xp)
+        xp.autocomplete("guild")(self.guild_autocompleter)
 
     def parse_guild(self, guild_name):
         if ' | ' in guild_name:
@@ -208,5 +213,34 @@ class GuildCommand(SlashGroup, name="guild"):
 
         # 24 bit colour
         paginator = ButtonPaginator(ictx, f"{guild} {days}d Playtime", data, colour=random.getrandbits(24), text='')
+
+        await paginator.generate_embed().respond()
+
+    @slash.describe(guild="guild to look up",
+                    days="how many days of xp generation")
+    async def xp(self, ictx: Interaction, guild: str, days: int):
+        """ Shows an XP leaderboard for individual members in a guild. """
+        now = int(dt.utcnow().timestamp())
+        prev = now - days * 86400
+
+        guild = self.parse_guild(guild)
+        member_lookup = self.bot.guilds_manager.get(guild, True)
+
+        # Get xp
+        xp_gained = self.bot.db.child('wynncraft').child('xp').child('contributed').child(guild) \
+            .order_by_key().start_at(str(prev)).end_at(str(now)).get().val() or {}
+        members = functools.reduce(operator.or_, map(dict.keys, xp_gained.values()))
+        members = list(members & member_lookup.keys())
+        xp_gained = [sum(map(lambda d: d.get(m, 0), xp_gained.values())) for m in members]
+
+        # Convert uuids to names
+        members = (member_lookup.get(k, {}).get('name') for k in members)
+        members = list(filter(None, members))
+
+        members, xp_gained = zip(*sorted(zip(members, xp_gained), key=lambda x: (x[1], x[0]), reverse=True))
+
+        # Sort into dict
+        data = {"Member": members, "XP": xp_gained}
+        paginator = ButtonPaginator(ictx, f"{guild} {days} Day XP Gains", data, colour=random.getrandbits(24), text='')
 
         await paginator.generate_embed().respond()

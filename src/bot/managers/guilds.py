@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-import asyncio
 import typing
-from typing import Set
+from typing import Set, Union
 
 import aiocron
 from pytz import utc
@@ -21,9 +20,12 @@ class GuildMemberManager:
         self.bot.db.path = None
         return self.bot.db.child('wynncraft').child('guilds')
 
-    def get(self, guild_name) -> Set[GuildMember]:
+    def get(self, guild_name, raw=False) -> Set[GuildMember] | dict[str, dict]:
         members = self.path().child(guild_name).child('members').get().val() or {}
-        return set(GuildMember(uuid=k, **v) for k, v in members.items())
+        if raw:
+            return members
+        else:
+            return set(GuildMember(uuid=k, **v) for k, v in members.items())
 
 
 class GuildPrefixManager:
