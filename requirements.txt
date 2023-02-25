@@ -8,5 +8,6 @@ python-dateutil
 dateparser
 pytz
 
+emoji
 fuzzywuzzy[speedup]
 python-dotenv
