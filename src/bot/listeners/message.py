@@ -52,6 +52,7 @@ class MessageListener:
             await self.update_replacements()
             self.last_update = time.time()
 
+
     async def ping_online_only(self, message: Message):
         """
         Replaces pings in certain messages with online-only pings.
@@ -86,13 +87,13 @@ class MessageListener:
         allowed_roles = replacement.get('allowed_roles', [])
         disallowed_roles = replacement.get('disallowed_roles', [])
 
-        if allowed_channels and message.channel.id not in allowed_channels:
+        if allowed_channels and str(message.channel.id) not in allowed_channels:
             return False
-        if disallowed_channels and message.channel.id in disallowed_channels:
+        if str(message.channel.id) in disallowed_channels:
             return False
         if allowed_roles and not any(str(r.id) in allowed_roles for r in message.author.roles):
             return False
-        if disallowed_roles and any(str(r.id) in disallowed_roles for r in message.author.roles):
+        if any(str(r.id) in disallowed_roles for r in message.author.roles):
             return False
 
         return True
