@@ -104,7 +104,7 @@ class GuildCommand(SlashGroup, name="guild"):
         embed = Embed(title=f"{self.bot.prefixes_manager.g2p[parsed]} | {parsed}", colour=random.getrandbits(24))
 
         names = '\n'.join(map(lambda x: x.name, sorted_members)) or '<none>'
-        ranks = '\n'.join(map(lambda x: f"{x.rank:<5s}", sorted_members)) or '<none>'
+        ranks = '\n'.join(map(lambda x: f"{'*' * x.rank:<5s}", sorted_members)) or '<none>'
         worlds = '\n'.join(map(lambda x: self.bot.players_manager.worlds.get(x.name), sorted_members)) or '<none>'
         embed.add_field(name="Username", value=escape_markdown(names), inline=True)
         embed.add_field(name="Rank", value=escape_markdown(ranks), inline=True)
