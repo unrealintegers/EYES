@@ -26,6 +26,11 @@ class MessageListener:
            mapping each starting role to a list of members with the replaced role."""
         def insert_members(roles, replacement_dict):
             if 'role' in replacement_dict:
+                role = utils.get(roles, id=int(replacement_dict['role']))
+                if role is None:
+                    self.bot.logger.info(f"Role {replacement_dict['role']} not found!")
+                    return
+
                 replacement_dict['members'] = utils.get(roles, id=int(replacement_dict['role'])).members
             else:
                 replacement_dict['members'] = []
@@ -40,7 +45,7 @@ class MessageListener:
 
             roles = await guild.fetch_roles()
             self.replacements[int(guild_id)] = {utils.get(roles, id=int(k)): insert_members(roles, v)
-                                                for k, v in replacements[guild_id].items()}
+                                                for k, v in replacements[guild_id].items() if insert_members(roles, v)}
 
     async def on_message(self, message: Message):
         # a lazy check before we start replacing
