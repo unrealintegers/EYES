@@ -15,7 +15,12 @@ class MapManager:
         self.owners = self.bot.db.child('config').child('claims').get().val()
         self.claim_guilds = {}
         for t, g in self.owners.items():
-            self.claim_guilds.setdefault(g, []).append(t)
+            if isinstance(t, str) and isinstance(g, str):
+                self.claim_guilds.setdefault(g, []).append(t)
+            else:
+                self.bot.logger.critical(f"Guild claims of wrong format: {g} owns {t}")
+                self.claim_guilds = {}
+                break
 
     def is_map_guild(self, guild: str):
         return guild in self.claim_guilds
