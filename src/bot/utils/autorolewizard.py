@@ -1,6 +1,5 @@
-from typing import Optional
-
 import re
+from typing import Optional
 
 from discord import Message, Embed, Interaction
 from discord import TextChannel, Member

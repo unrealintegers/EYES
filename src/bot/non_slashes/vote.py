@@ -1,6 +1,5 @@
-from discord import Message, Interaction
-
 import emoji
+from discord import Message, Interaction
 
 from ..bot import EYESBot, ContextMenuCommand
 

@@ -1,15 +1,15 @@
-from typing import Optional
-
 from collections import defaultdict
 from datetime import datetime as dt
-from dateparser import parse as parsedate
+from typing import Optional
 
+import discord.app_commands as slash
+from dateparser import parse as parsedate
 from discord import Interaction
 from discord import Member, Webhook
 from discord.utils import find
-import discord.app_commands as slash
 
 from ..bot import EYESBot, SlashCommand
+from ..managers import ConfigManager
 
 
 class ImpersonateCommand(SlashCommand, name="impersonate", guild_only=True):
@@ -57,13 +57,10 @@ class TimestampCommand(SlashCommand, name="timestamp"):
     def __init__(self, bot: EYESBot, guild_ids: list[int]):
         super().__init__(bot, guild_ids)
 
-    def tz_path(self):
-        return self.bot.db.child("config").child("user")
-
     @slash.describe(time="time to get timestamp for")
     async def callback(self, ictx: Interaction, time: str):
         """Helps create Discord timestamps from a human-readable date."""
-        tz = self.tz_path().child(ictx.user.id).child("tz").get().val()
+        tz = ConfigManager.get_dynamic("tz", user_id=ictx.user.id)
         if tz is None:
             await ictx.response.send_message("You have not set your time zone yet! "
                                              "Run `/config set path:tz value:<your timezone> scope:user` to set it.",

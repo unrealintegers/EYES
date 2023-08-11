@@ -5,6 +5,7 @@ import aiocron
 import requests
 
 from ..bot import BotTask, EYESBot
+from ..managers import ConfigManager
 from ..models import WynncraftAPI
 
 
@@ -20,7 +21,7 @@ class WarTracker(BotTask):
         self.update_wars().start()
 
     async def update_channels(self):
-        channels_data = self.bot.db.child("config").child("warchannels").get().val()
+        channels_data = ConfigManager.get_static('warchannels')
         self.broadcast_channels = []
         for g_id, v in channels_data.items():
             if g_id.isdecimal():
@@ -103,6 +104,11 @@ class WarTracker(BotTask):
             self.territory_counts = defaultdict(int)
             for _, (g, _) in self.last_territories.items():
                 self.territory_counts[g] += 1
+
+            # Update to db
+            now = int(datetime.now().timestamp())
+            insert_list = [(now, terr, g_from, g_to) for terr, (g_from, g_to) in transfers.items()]
+            self.bot.db.run_batch("INSERT INTO territory_capture VALUES (%s, %s, %s, %s)", insert_list)
 
             for terr, (g_from, g_to) in transfers.items():
                 prefix_from = self.bot.prefixes_manager.g2p.get(g_from, '????')

@@ -1,5 +1,5 @@
-from discord import Interaction
 import discord.app_commands as slash
+from discord import Interaction
 
 from ..guild import GuildCommand
 from ...bot import EYESBot, SlashCommand

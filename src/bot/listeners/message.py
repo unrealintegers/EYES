@@ -1,10 +1,11 @@
+import time
 from typing import TYPE_CHECKING
 
-import time
-
 from discord import Message, Status
-from discord.utils import MISSING
 from discord import utils
+from discord.utils import MISSING
+
+from ..managers import ConfigManager
 
 if TYPE_CHECKING:
     from ..bot import EYESBot
@@ -37,7 +38,7 @@ class MessageListener:
 
             return replacement_dict
 
-        replacements = self.bot.db.child('config').child('onlinepings').child('guild').get().val()
+        replacements = ConfigManager.get_static('onlinepings')
         for guild_id in replacements:
             guild = self.bot.get_guild(int(guild_id))
             if guild is None:
@@ -56,7 +57,6 @@ class MessageListener:
         if time.time() - self.last_update > 60:
             await self.update_replacements()
             self.last_update = time.time()
-
 
     async def ping_online_only(self, message: Message):
         """

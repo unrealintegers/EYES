@@ -1,7 +1,9 @@
+import os
+
+from dotenv import load_dotenv
+
 from bot import EYESBot
 
-import os
-from dotenv import load_dotenv
 load_dotenv()
 
 if __name__ == "__main__":
@@ -10,6 +12,7 @@ if __name__ == "__main__":
     from bot.slashes import *  # noqa
     from bot.slashes.shortcuts import *  # noqa
     from bot.tasks import *  # noqa
+    from bot.managers import * # noqa
 
     bot = EYESBot(',')
 

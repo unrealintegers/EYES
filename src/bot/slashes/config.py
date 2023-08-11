@@ -1,13 +1,13 @@
 import json
 import zlib
-
-from discord import Interaction
-import discord.app_commands as slash
-
 from datetime import datetime as dt
+
+import discord.app_commands as slash
 import pytz
+from discord import Interaction
 
 from ..bot import EYESBot, SlashGroup
+from ..managers import ConfigManager
 from ..models import choice
 from ..utils.wynn import parse_map_string
 
@@ -44,21 +44,17 @@ class ConfigCommand(SlashGroup, name="config"):
         # Clean the path
         path = path.lower().strip().split('/')
         # Validate the path
-        allowed_paths = self.bot.db.child("paths").get().val().values()
+        allowed_paths = ConfigManager.get_static('paths')
         if path[0] not in allowed_paths:
             await ictx.response.send_message("Invalid Path!", ephemeral=True)
             return
 
         # Child to the path
-        db_path = self.bot.db.child("config").child(scope)
         if scope == "user":
-            db_path = db_path.child(ictx.user.id)
+            ConfigManager.set_user(ictx.user.id, path, json.loads(value))
         elif scope == "guild":
-            db_path = db_path.child(ictx.guild.id)
-        for ext in path:
-            db_path = db_path.child(ext)
+            ConfigManager.set_guild(ictx.guild.id, path, json.loads(value))
 
-        db_path.set(json.loads(value))
         await ictx.response.send_message("Done!", ephemeral=True)
 
     @slash.describe(timezone="your timezone, in IANA format")
@@ -73,7 +69,7 @@ class ConfigCommand(SlashGroup, name="config"):
                 "time zone. (It should look like `US/Eastern` or `Europe/Paris` with a slash)", ephemeral=True
             )
         else:
-            self.bot.db.child('config').child('user').child(ictx.user.id).child('tz').set(tz.zone)
+            ConfigManager.set_user(ictx.user.id, 'tz', tz.zone)
             now = dt.now(tz=tz)
             await ictx.response.send_message(
                 f"Successfully set your timezone to `{tz.zone}`! Your current time is `{now.strftime('%I:%M%p')}`."
@@ -99,6 +95,6 @@ class ConfigCommand(SlashGroup, name="config"):
             return
 
         map_dict = {k: '_' if v is None else v for k, v in map_dict.items()}
-        self.bot.db.child('config').child('claims').set(map_dict)
+        ConfigManager.set_static('claims', map_dict)
 
         await ictx.response.send_message("Successfully updated the map.", ephemeral=True)

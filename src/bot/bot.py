@@ -1,16 +1,14 @@
 from __future__ import annotations
 
-import json
 import logging
-import os
 
-import pyrebase as pyrebase4
 from discord import Intents
 from discord.ext import commands
 
 from .listeners import InteractionListener, MessageListener
 from .managers import ConfigManager, GuildPrefixManager, GuildMemberManager, PlayerManager, MapManager
 from .models import SlashCommand, ContextMenuCommand, BotTask, SlashGroup
+from .utils.db import DatabaseManager
 
 
 class EYESBot(commands.Bot):
@@ -39,14 +37,12 @@ class EYESBot(commands.Bot):
 
         self.tasks: dict[str, BotTask] = {}
 
-        # Using env variable as Heroku expects
-        firebase = pyrebase4.initialize_app(json.loads(os.getenv("DB_CREDS")))
-        self.db = firebase.database()
+        self.db: DatabaseManager = DatabaseManager()
 
-        ConfigManager.init_db(self.db)
+        ConfigManager.update()
 
     async def instantiate_commands(self):
-        guild_dict = self.db.child("application").child("commands").get().val()
+        # guild_dict = ConfigManager.get_static("application")
 
         for sub_cls in SlashCommand.__subclasses__():
             # name = sub_cls.name  # noqa : name is guaranteed to be defined

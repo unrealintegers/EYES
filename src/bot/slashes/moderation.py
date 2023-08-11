@@ -1,7 +1,7 @@
 import io
 
-from discord import Interaction
 from discord import File
+from discord import Interaction
 
 from ..bot import EYESBot, SlashCommand
 

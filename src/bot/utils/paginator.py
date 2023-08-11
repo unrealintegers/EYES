@@ -1,9 +1,9 @@
 from typing import Optional, Union, Dict, Sequence
 
-from discord import Message, Embed
 from discord import Interaction
-from discord.ui import View, Button
+from discord import Message, Embed
 from discord.abc import Messageable
+from discord.ui import View, Button
 from discord.utils import escape_markdown
 
 Pageable = Union[Interaction, Messageable]

@@ -1,7 +1,4 @@
-import functools
-import operator
 import random
-import time
 from collections import OrderedDict
 from datetime import datetime as dt
 from itertools import product
@@ -44,7 +41,7 @@ class GuildCommand(SlashGroup, name="guild"):
             return self.bot.prefixes_manager.p2g.get(guild_name)
 
     def parse_guilds(self, guilds_name):
-        guilds = ConfigManager.get("guildgroups", guilds_name)
+        guilds = ConfigManager.get_dynamic("guildgroups", guilds_name)
 
         # Not found => Not a group
         if guilds is None:
@@ -179,30 +176,15 @@ class GuildCommand(SlashGroup, name="guild"):
         prev = now - days * 86400
 
         guild = self.parse_guild(guild)
-        members = self.bot.guilds_manager.get(guild)
-        playtime = []
 
-        total = len(members)
-        await ictx.response.send_message("Fetching data...")
-        orig = await ictx.original_response()
-        start = time.time()
-
-        for i, member in enumerate(members):
-            # Progress bar
-            if time.time() - start > 5:
-                start = time.time()
-                await orig.edit(content=f"Fetching data... ({i}/{total})")
-
-            # We default to empty dict as otherwise it might be an empty list
-            self.bot.db.path = None
-            online_times = self.bot.db.child('wynncraft').child('playtime').child('players').child(member.name) \
-                               .order_by_key().start_at(str(prev)).end_at(str(now)).get().val() or {}
-            member_playtime = int(sum(online_times.values()))
-
-            all_times = map(int, self.bot.db.child('wynncraft').child('playtime').child('players').child(member.name)
-                            .shallow().get().val() or [-1])
-            last_seen = max(all_times)
-            playtime.append((member.name, member_playtime, last_seen))
+        playtime = self.bot.db.fetch("""
+                SELECT gp.name, SUM(pp.value), EXTRACT(EPOCH FROM MAX(pp.end_time)) 
+                FROM guild_player gp
+                LEFT JOIN player_playtime pp
+                ON gp.guild = %s
+                AND gp.name = pp.player
+                AND pp.end_time >= %s
+        """, (guild, prev))
 
         playtime.sort(key=lambda x: (-x[1], -x[2], x[0]))
 
@@ -224,20 +206,17 @@ class GuildCommand(SlashGroup, name="guild"):
         prev = now - days * 86400
 
         guild = self.parse_guild(guild)
-        member_lookup = self.bot.guilds_manager.get(guild, True)
 
         # Get xp
-        xp_gained = self.bot.db.child('wynncraft').child('xp').child('contributed').child(guild) \
-            .order_by_key().start_at(str(prev)).end_at(str(now)).get().val() or {}
-        members = functools.reduce(operator.or_, map(dict.keys, xp_gained.values()))
-        members = list(members & member_lookup.keys())
-        xp_gained = [sum(map(lambda d: d.get(m, 0), xp_gained.values())) for m in members]
+        # TODO: also fix this with start/end times
+        xp_res = self.bot.db.fetch_tup("SELECT gp.name, sum(px.value) FROM player_xp px "
+                                       "WHERE guild = %s AND time >= %s "
+                                       "LEFT JOIN guild_player gp ON gp.uuid = px.uuid AND gp.guild = px.guild "
+                                       "GROUP BY gp.name"
+                                       "ORDER BY sum(px.value) DESC",
+                                       (guild, prev))
 
-        # Convert uuids to names
-        members = (member_lookup.get(k, {}).get('name') for k in members)
-        members = list(filter(None, members))
-
-        members, xp_gained = zip(*sorted(zip(members, xp_gained), key=lambda x: (x[1], x[0]), reverse=True))
+        members, xp_gained = zip(*xp_res)
 
         # Sort into dict
         data = {"Member": members, "XP": xp_gained}

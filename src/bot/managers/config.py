@@ -1,43 +1,82 @@
+import json
+import os.path
+
+
 class ConfigManager:
-    _db = None
+    @staticmethod
+    def get_from_path(mapping, path):
+        for ext in path.split('/'):
+            mapping = mapping.get(ext, {})
+        return mapping
+
+    @staticmethod
+    def set_to_path(mapping, path, value):
+        *path, last = path.split('/')
+        for ext in path:
+            mapping = mapping.setdefault(ext, {})
+
+        mapping[last] = value
+
     _global = {}
     _guild = {}
-
-    @classmethod
-    def init_db(cls, db):
-        cls._db = db
-        cls.update()
+    _user = {}
 
     @classmethod
     def update(cls):
-        if not cls._db:
-            raise ValueError("db has not been initialised")
+        with open('config/global.json', 'r') as f:
+            cls._global = json.loads(f.read())
 
-        data = cls._db.child('config').get().val()
-        cls._global = data.get('global', {})
-        cls._guild = data.get('guild', {})
+        with open('config/guild.json', 'r') as f:
+            cls._guild = json.loads(f.read())
+
+        with open('config/user.json', 'r') as f:
+            cls._user = json.loads(f.read())
 
         print(cls._global)
 
     @classmethod
-    def get(cls, path, key, guild_id=None, user_id=None):
-        print(cls._global)
-        # TODO: Implement paths of depth >1 (containing /)
-        if not cls._db:
-            raise ValueError("db has not been initialised")
-
-        if result := cls._global.get(path, {}).get(key):
+    def get_dynamic(cls, path, guild_id=None, user_id=None):
+        # TODO: Reconsider the logic of this function
+        if result := cls.get_from_path(cls._global, path):
             return result
 
         # Global not found, we search guilds
         if guild_id is not None:
-            if result := cls._guild.get(guild_id, {}).get(path, {}).get(key):
+            if result := cls.get_from_path(cls._guild.get(guild_id, {}), path):
                 return result
 
         # Finally we try users
         if user_id is not None:
-            user_dict = cls._db.child("config").child("user").child(user_id).child(path).get().val()
-            return user_dict.get(key)
+            if result := cls.get_from_path(cls._user.get(user_id, {}), path):
+                return result
 
         # Not found
         return None
+
+    @classmethod
+    def get_static(cls, fp):
+        with open(os.path.join('config', fp + '.json'), 'r') as f:
+            return json.loads(f.read())
+
+    @classmethod
+    def set_global(cls, path, value):
+        cls.set_to_path(cls._global, path, value)
+        with open('config/global.json', 'w') as f:
+            f.write(json.dumps(cls._global, indent=4))
+
+    @classmethod
+    def set_guild(cls, guild_id, path, value):
+        cls.set_to_path(cls._guild.setdefault(guild_id, {}), path, value)
+        with open('config/guild.json', 'w') as f:
+            f.write(json.dumps(cls._guild, indent=4))
+
+    @classmethod
+    def set_user(cls, user_id, path, value):
+        cls.set_to_path(cls._user.setdefault(user_id, {}), path, value)
+        with open('config/user.json', 'w') as f:
+            f.write(json.dumps(cls._user, indent=4))
+
+    @classmethod
+    def set_static(cls, fp, content):
+        with open(os.path.join('config', fp + '.json'), 'w') as f:
+            f.write(json.dumps(content, indent=4))

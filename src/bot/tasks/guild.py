@@ -21,9 +21,6 @@ class GuildListUpdater(BotTask):
         self.update().call_func()
         self.update().start()
 
-    def path(self):
-        return self.bot.db.child('wynncraft').child('guilds')
-
     def update(self):
         @aiocron.crontab("0 */3 * * *", start=False, tz=utc)
         async def wrapper():
@@ -35,14 +32,27 @@ class GuildListUpdater(BotTask):
             else:
                 response = response.json()
 
-            existing_guilds = self.path().shallow().get().val() or []
+            existing_guilds = self.bot.db.fetch_tup("SELECT name FROM guild_update_info")
+            existing_guilds = list(*zip(*existing_guilds))
 
             guilds = response['guilds']
-            one_day = td(days=1).total_seconds()
-            guilddict = {g: {'name': g, 'interval': one_day, 'no_diff_days': 0, 'next_update': 0}
-                         for g in guilds if g not in existing_guilds}
 
-            self.path().update(guilddict)
+            guild_list = [(g, ) for g in guilds if g not in existing_guilds]
+            guild_update = {(g, dt.utcnow(), 0, td(days=1)) for g in guilds if g not in existing_guilds}
+            self.bot.db.run_batch("INSERT INTO guild_info (name) VALUES (%s)", guild_list)
+            self.bot.db.run_batch("INSERT INTO guild_update_info VALUES (%s, %s, %s, %s)", guild_update)
+
+            # remove old guilds
+            deleted_guilds = {(g, ) for g in existing_guilds if g not in guilds}
+            self.bot.db.run_batch("""
+                WITH deleted_guild AS (
+                    DELETE FROM guild_info 
+                    WHERE name = %s
+                    RETURNING * 
+                ) INSERT INTO deleted_guild_info (name, prefix, level, size, deleted) 
+                SELECT deleted_guild.*, NOW() FROM deleted_guild
+            """, deleted_guilds)
+            # TODO: Member history
 
         return wrapper
 
@@ -59,26 +69,6 @@ class GuildUpdater(BotTask):
 
         self.next().start()
 
-    def guild_path(self):
-        self.bot.db.path = None
-        return self.bot.db.child('wynncraft').child('guilds')
-
-    def lookup_path(self):
-        self.bot.db.path = None
-        return self.bot.db.child('wynncraft').child('lookup')
-
-    def deleted_path(self):
-        self.bot.db.path = None
-        return self.bot.db.child('wynncraft').child('deleted_guilds')
-
-    def prefix_path(self):
-        self.bot.db.path = None
-        return self.bot.db.child('wynncraft').child('prefixes')
-
-    def xp_path(self):
-        self.bot.db.path = None
-        return self.bot.db.child('wynncraft').child('xp')
-
     def next(self):
         @aiocron.crontab('* * * * * */3', start=False)
         async def callback():
@@ -94,10 +84,10 @@ class GuildUpdater(BotTask):
         return callback
 
     def build_pq(self):
-        guilds = self.guild_path().get().each()
+        guilds = self.bot.db.fetch_dict("SELECT name, next_update FROM guild_update_info")
         for guild in guilds:
-            guild_name = guild.key()
-            timestamp = guild.val().get('next_update', 0)
+            guild_name = guild.get('name')
+            timestamp = guild.get('next_update', dt.now()).timestamp()
             heapq.heappush(self.pq, (timestamp, guild_name))
 
     @staticmethod
@@ -133,66 +123,73 @@ class GuildUpdater(BotTask):
                 else:
                     response = await response.json()
 
-        # Check for error: guild not found
-        if response.get("error") == "Guild not found":
-            # The guild was deleted, so we add it to deleted_guilds and remove it from guilds
-            last_info = self.guild_path().child(guild_name).get().val()
-            self.guild_path().child(guild_name).remove()
-            last_info['deleted'] = dt.now().timestamp()
-            self.deleted_path().child(guild_name).set(last_info)
-            return
-
         # We grab the prefix and additionally add it to a prefix path for faster lookups
         prefix = response['prefix']
-        self.prefix_path().child(prefix).set(guild_name)
 
         # Now we get the members and return a number for change between this and last iteration
-        members = map(lambda m: GuildMember.from_data(m).to_dict_item(), response['members'])
-        memberdict = dict(members)
-        memberdict_old = self.guild_path().child(guild_name).child('members').get().val() or {}
-        num_changes = len(memberdict.keys() | memberdict_old.keys()) - len(memberdict.keys() & memberdict_old.keys())
-        self.guild_path().child(guild_name).child('members').set(memberdict)
+        member_info = list(map(lambda m: GuildMember.from_data(m).to_dict(), response['members']))
+        old_member_info = self.bot.db.fetch_dict("SELECT name, uuid, rank, joined, contributed FROM guild_player "
+                                                 "WHERE guild = %s", (guild_name, ))
 
-        # Member-Guild Lookup
-        usernamedict = {member['name']: guild_name for member in memberdict.values()}
-        self.lookup_path().update(usernamedict)
+        members = {member['uuid']: member for member in member_info}
+        old_members = {member['uuid']: member for member in old_member_info}
+        num_changes = len(members.keys() | old_members.keys()) - len(members.keys() & old_members.keys())
+
+        guild_player_insert = {(guild_name, uuid, member['name'], member['rank'],
+                                member['joined'], member['contributed'])
+                               for uuid, member in members.items() if uuid not in old_members.keys()}
+        self.bot.db.run_batch("INSERT INTO guild_player VALUES (%s, %s, %s, %s, %s, %s)", guild_player_insert)
+
+        # Member history tracking
+        await self.process_member_changes(old_members, members)
 
         # Calculate XP transitions
-        await self.update_xp(guild_name, memberdict_old, memberdict)
+        await self.update_xp(guild_name, old_members, members)
 
         # Record this update
-        interval = self.guild_path().child(guild_name).child('interval').get().val() or td(days=1).total_seconds()
+        update_info = self.bot.db.fetch_tup("SELECT update_interval, no_diff_days FROM guild_update_info "
+                                            "WHERE name = %s", (guild_name, ))
+
+        if len(update_info) != 1:
+            raise ValueError(f"Guild not found or multiple guilds found of name {guild_name} in guild_update_info")
+        update_info = update_info[0]
+
+        interval = update_info[0] or td(days=1)
+        no_diff_days = update_info[1] or 0
 
         if num_changes == 0:
-            no_diff_days = self.guild_path().child(guild_name).child('no_diff_days').get().val() or 0
-            no_diff_days += interval / (60 * 60 * 24)
+            no_diff_days += interval.total_seconds() / (60 * 60 * 24)
         else:
             no_diff_days = 0
 
-        next_interval = self.calc_next_interval(td(seconds=interval), no_diff_days, num_changes)
+        next_interval = self.calc_next_interval(interval, no_diff_days, num_changes)
         next_update = dt.now() + next_interval
 
-        self.guild_path().child(guild_name).update({
-            "level": response['level'],
-            "size": len(memberdict),
-            "interval": next_interval.total_seconds(),
-            "no_diff_days": no_diff_days,
-            "next_update": next_update.timestamp()
-        })
+        self.bot.db.run("UPDATE guild_update_info "
+                        "SET next_update = %s, no_diff_days = %s, update_interval = %s "
+                        "WHERE name = %s",
+                        (next_update, no_diff_days, next_interval, guild_name))
+        self.bot.db.run("UPDATE guild_info "
+                        "SET prefix = %s, level = %s, size = %s "
+                        "WHERE name = %s",
+                        (prefix, response.get('level'), len(members), guild_name))
 
         return next_update.timestamp()
 
+    async def process_member_changes(self, old_members, new_members):
+        pass
+
     async def update_xp(self, guild_name, old_members, new_members):
+        now = dt.now()
         total = 0
-        update_dict = {}
-        for member in new_members.keys():
-            old_xp = old_members.get(member, {}).get('contributed', 0)
-            new_xp = new_members[member].get('contributed') or old_xp
+        update_list = []
+        for member_uuid in new_members:
+            old_xp = old_members.get(member_uuid, {}).get('contributed') or 0
+            new_xp = new_members[member_uuid].get('contributed') or old_xp
             gained = new_xp - old_xp
-            update_dict[member] = gained
+            update_list.append((guild_name, member_uuid, now, gained))
             total += gained
 
-        timestamp = int(dt.now().timestamp())
-
-        self.xp_path().child('contributed').child(guild_name).child(timestamp).update(update_dict)
-        self.xp_path().child('guilds').child(guild_name).child(timestamp).set(total)
+        # TODO: implement start/end times
+        self.bot.db.run_batch("INSERT INTO player_xp VALUES (%s, %s, %s, %s)", update_list)
+        self.bot.db.run("INSERT INTO guild_xp VALUES (%s, %s, %s)", (guild_name, now, total))

@@ -1,5 +1,7 @@
 import typing
 
+from . import ConfigManager
+
 if typing.TYPE_CHECKING:
     from ..bot import EYESBot
 
@@ -12,7 +14,7 @@ class MapManager:
         self.owners = {}
 
     def init(self):
-        self.owners = self.bot.db.child('config').child('claims').get().val()
+        self.owners = ConfigManager.get_static('claims')
         self.claim_guilds = {}
         for t, g in self.owners.items():
             if isinstance(t, str) and isinstance(g, str):

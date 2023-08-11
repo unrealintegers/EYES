@@ -1,9 +1,9 @@
 import random
 import time
-import aiohttp
 
-from discord import Interaction
+import aiohttp
 import discord.app_commands as slash
+from discord import Interaction
 
 from ..bot import EYESBot, SlashCommand
 from ..utils.paginator import ButtonPaginator

@@ -11,7 +11,7 @@ class PlayerListUpdater(BotTask):
         self.update().start()
 
     def update(self):
-        @aiocron.crontab('* * * * * */30', start=False)
+        @aiocron.crontab('* * * * * */6', start=False)
         async def callback():
             async with aiohttp.ClientSession() as session:
                 async with session.get("https://api.wynncraft.com/public_api.php?action=onlinePlayers") as response:

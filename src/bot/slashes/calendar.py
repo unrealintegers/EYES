@@ -4,9 +4,9 @@ from datetime import timedelta
 from datetime import timedelta as td
 
 import aiocron
+import discord.app_commands as slash
 from dateparser import parse as parsedate
 from discord import Interaction
-import discord.app_commands as slash
 
 from ..bot import EYESBot, SlashCommand
 

@@ -1,8 +1,8 @@
 import typing
 
+import discord.app_commands as slash
 from discord import Interaction, Permissions
 from discord.app_commands import Choice
-import discord.app_commands as slash
 
 if typing.TYPE_CHECKING:
     from .bot import EYESBot

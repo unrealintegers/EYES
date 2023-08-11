@@ -1,6 +1,6 @@
 __all__ = (
     "autorole",
-    "calendar",
+    # "calendar",
     "config",
     "general",
     "guild",

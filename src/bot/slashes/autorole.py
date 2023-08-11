@@ -1,6 +1,6 @@
+import discord.app_commands as slash
 from discord import Interaction, TextChannel, Permissions
 from discord import NotFound, HTTPException
-import discord.app_commands as slash
 
 from ..bot import SlashGroup, EYESBot
 from ..utils.autorolewizard import AutoroleWizard
