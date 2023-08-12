@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import typing
-from typing import Set
+from itertools import groupby
+from operator import itemgetter
 
 import aiocron
 from pytz import utc
@@ -16,13 +17,14 @@ class GuildMemberManager:
     def __init__(self, bot: 'EYESBot'):
         self.bot = bot
 
-    def get(self, guild_name, raw=False) -> Set[GuildMember] | dict[str, dict]:
-        members = self.bot.db.fetch_dict("SELECT * FROM guild_player "
-                                         "WHERE guild = %s", (guild_name, ))
-        if raw:
-            return members
-        else:
-            return set(GuildMember(**m) for m in members)
+        self.g2m = {}
+        self.m2g = {}
+
+    def update(self):
+        members = self.bot.db.fetch_dict("SELECT guild, name FROM guild_player ORDER BY guild")
+        self.g2m = {g: set(GuildMember(**m) for m in ms)
+                              for g, ms in groupby(members, key=itemgetter('guild'))}
+        self.m2g = {m['name']: m['guild'] for m in members}
 
 
 class GuildPrefixManager:
