@@ -28,6 +28,8 @@ class EYESBot(commands.Bot):
         self.logger.addHandler(handler)
 
         # Create managers
+        self.db: DatabaseManager = DatabaseManager()
+
         self.guilds_manager = GuildMemberManager(self)
         self.prefixes_manager = GuildPrefixManager(self)
         self.players_manager = PlayerManager(self)
@@ -36,8 +38,6 @@ class EYESBot(commands.Bot):
         self.msg = MessageListener(self)
 
         self.tasks: dict[str, BotTask] = {}
-
-        self.db: DatabaseManager = DatabaseManager()
 
         ConfigManager.update()
 

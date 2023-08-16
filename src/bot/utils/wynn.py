@@ -28,7 +28,7 @@ class GuildMember:
         self.name = name
         self.uuid = uuid
         self.rank = rank
-        if isinstance(joined, dt):
+        if isinstance(joined, dt) or joined is None:
             self.joined = joined
         else:
             self.joined = dt.utcfromtimestamp(joined)

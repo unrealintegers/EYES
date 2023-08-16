@@ -1,5 +1,6 @@
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime as dt
+from datetime import timedelta as td
 
 import aiocron
 import requests
@@ -54,10 +55,10 @@ class WarTracker(BotTask):
             return None
 
         territories = resp.json()['territories']
-        return {t: (d['guild'], datetime.strptime(d['acquired'], "%Y-%m-%d %H:%M:%S")) for t, d in territories.items()}
+        return {t: (d['guild'], dt.strptime(d['acquired'], "%Y-%m-%d %H:%M:%S")) for t, d in territories.items()}
 
-    def generate_string(self, g_from, g_to, prefix_from, prefix_to, territory):
-        template = "```ansi\n{}[{{}}m{}[0m[{}] -> [{{}}m{}[0m[{}]{} | [{{}}{}m{}\n```"
+    def generate_string(self, g_from, g_to, prefix_from, prefix_to, territory, players):
+        template = "```ansi\n{}[{{}}m{}[0m[{}] -> [{{}}m{}[0m[{}]{} | [{{}}{}m{} [{}]\n```"
         color_terr = self.get_territory_color(territory)
 
         self.territory_counts[g_from] -= 1
@@ -68,7 +69,9 @@ class WarTracker(BotTask):
         lpad = ' ' * (8 - len(prefix_from) - len(str(count_from)))
         rpad = ' ' * (8 - len(prefix_to) - len(str(count_to)))
 
-        return template.format(lpad, prefix_from, count_from, prefix_to, count_to, rpad, color_terr, territory)
+        players = ', '.join(players)
+
+        return template.format(lpad, prefix_from, count_from, prefix_to, count_to, rpad, color_terr, territory, players)
 
     def get_guild_fmt(self, guild, prefix_home):
         style = '1;4;' if guild == prefix_home else ''
@@ -105,15 +108,20 @@ class WarTracker(BotTask):
             for _, (g, _) in self.last_territories.items():
                 self.territory_counts[g] += 1
 
-            # Update to db
-            now = int(datetime.now().timestamp())
-            insert_list = [(now, terr, g_from, g_to) for terr, (g_from, g_to) in transfers.items()]
-            self.bot.db.run_batch("INSERT INTO territory_capture VALUES (%s, %s, %s, %s)", insert_list)
-
             for terr, (g_from, g_to) in transfers.items():
+                war_id = self.bot.db.fetch_tup("INSERT INTO territory_capture VALUES (%s, %s, %s, %s) RETURNING id",
+                                               (dt.now(), terr, g_from, g_to))[0][0]
+
+                war_guess = self.bot.players_manager.war_candidates.get(g_from, (dt.min, []))
+                if dt.now() - war_guess[0] < td(minutes=10):
+                    self.bot.db.run_batch("INSERT INTO war_player VALUES (%s, %s)", [(war_id, p) for p in war_guess[1]])
+                    del self.bot.players_manager.war_candidates[g_from]
+                else:
+                    self.bot.logger.warn("War not found for guild %s", g_to)
+
                 prefix_from = self.bot.prefixes_manager.g2p.get(g_from, '????')
                 prefix_to = self.bot.prefixes_manager.g2p.get(g_to, '????')
-                terr_template = self.generate_string(g_from, g_to, prefix_from, prefix_to, terr)
+                terr_template = self.generate_string(g_from, g_to, prefix_from, prefix_to, terr, war_guess[1])
                 for channel, g_home, terr_filter in self.broadcast_channels:
                     if terr_filter != [] and terr not in terr_filter:
                         continue
