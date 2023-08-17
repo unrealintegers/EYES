@@ -1,43 +1,42 @@
 import os
 
-import psycopg2
-import psycopg2.extras
+import psycopg
+import psycopg.rows
 
 
 class DatabaseManager:
     def __init__(self):
-        self.conn = psycopg2.connect(os.getenv("DB_CREDS"))
+        self.conn = None
+
+    async def init(self):
+        self.conn = await psycopg.AsyncConnection.connect(os.getenv("DB_CREDS"), autocommit=True)
 
     # Implement some behaviour of the connection class
-    def __enter__(self):
+    async def __aenter__(self):
         return self.conn.__enter__()
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
         return self.conn.__exit__(exc_type, exc_val, exc_tb)
 
     def __getattr__(self, item):
         return getattr(self.conn, item)
 
-    def run(self, query, vars=tuple()):
-        with self.conn:
-            with self.conn.cursor() as cur:
-                cur.execute(query, vars)
+    async def run(self, query, vars=tuple()):
+        async with self.conn.cursor() as cur:
+            await cur.execute(query, vars)
 
-    def run_batch(self, query, vars=tuple()):
-        with self.conn:
-            with self.conn.cursor() as cur:
-                psycopg2.extras.execute_batch(cur, query, vars)
+    async def run_batch(self, query, vars=tuple()):
+        async with self.conn.cursor() as cur:
+            await cur.executemany(query, vars)
 
-    def fetch_tup(self, query, vars=tuple()):
-        with self.conn:
-            with self.conn.cursor() as cur:
-                cur.execute(query, vars)
+    async def fetch_tup(self, query, vars=tuple()):
+        async with self.conn.cursor() as cur:
+            await cur.execute(query, vars)
 
-                return cur.fetchall()
+            return await cur.fetchall()
 
-    def fetch_dict(self, query, vars=tuple()):
-        with self.conn:
-            with self.conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-                cur.execute(query, vars)
+    async def fetch_dict(self, query, vars=tuple()):
+        async with self.conn.cursor(row_factory=psycopg.rows.dict_row) as cur:
+            await cur.execute(query, vars)
 
-                return cur.fetchall()
+            return await cur.fetchall()

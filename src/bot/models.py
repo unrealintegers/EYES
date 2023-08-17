@@ -78,6 +78,9 @@ class BotTask:
     def __init__(self, bot: "EYESBot"):
         self.bot = bot
 
+    async def init(self, *args, **kwargs):
+        pass
+
 
 class WynncraftAPI:
     TERRITORIES = r"https://api.wynncraft.com/public_api.php?action=territoryList"

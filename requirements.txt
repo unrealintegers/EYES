@@ -1,5 +1,5 @@
 discord.py
-psycopg2
+psycopg[c]
 requests
 aiohttp[speedups]
 

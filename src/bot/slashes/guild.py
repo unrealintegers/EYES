@@ -177,13 +177,14 @@ class GuildCommand(SlashGroup, name="guild"):
 
         guild = self.parse_guild(guild)
 
-        playtime = self.bot.db.fetch("""
+        playtime = await self.bot.db.fetch_tup("""
                 SELECT gp.name, SUM(pp.value), EXTRACT(EPOCH FROM MAX(pp.end_time)) 
                 FROM guild_player gp
                 LEFT JOIN player_playtime pp
                 ON gp.guild = %s
                 AND gp.name = pp.player
                 AND pp.end_time >= %s
+                GROUP BY gp.name
         """, (guild, prev))
 
         playtime.sort(key=lambda x: (-x[1], -x[2], x[0]))
@@ -209,12 +210,12 @@ class GuildCommand(SlashGroup, name="guild"):
 
         # Get xp
         # TODO: also fix this with start/end times
-        xp_res = self.bot.db.fetch_tup("SELECT gp.name, sum(px.value) FROM player_xp px "
-                                       "WHERE guild = %s AND time >= %s "
-                                       "LEFT JOIN guild_player gp ON gp.uuid = px.uuid AND gp.guild = px.guild "
-                                       "GROUP BY gp.name"
-                                       "ORDER BY sum(px.value) DESC",
-                                       (guild, prev))
+        xp_res = await self.bot.db.fetch_tup("SELECT gp.name, sum(px.value) FROM player_xp px "
+                                             "LEFT JOIN guild_player gp ON gp.uuid = px.uuid AND gp.guild = px.guild "
+                                             "AND px.guild = %s AND px.time >= %s "
+                                             "GROUP BY gp.name "
+                                             "ORDER BY sum(px.value) DESC",
+                                             (guild, prev))
 
         members, xp_gained = zip(*xp_res)
 

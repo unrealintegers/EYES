@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import uuid as uuid_
 import zlib
 from ast import literal_eval as ieval
 from datetime import datetime as dt
@@ -46,6 +47,8 @@ class GuildMember:
             data['rank'] = RANKS.index(data['rank'])
         if data['joined']:
             data['joined'] = dtparser.parse(data['joined'])
+        if data['uuid']:
+            data['uuid'] = uuid_.UUID(data['uuid'])
         return cls(**data)
 
     # { name, uuid: str, rank: int, joined: float (timestamp), contributed: int }

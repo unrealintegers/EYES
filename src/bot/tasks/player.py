@@ -8,6 +8,7 @@ class PlayerListUpdater(BotTask):
     def __init__(self, bot: EYESBot):
         super().__init__(bot)
 
+    async def init(self):
         self.update().start()
 
     def update(self):
@@ -27,6 +28,6 @@ class PlayerListUpdater(BotTask):
 
             # Update playtime
             if playtime := self.bot.tasks.get('PlayerPlaytimeUpdater'):
-                playtime.update(set(sum(players.values(), [])))
+                await playtime.update(set(sum(players.values(), [])))
 
         return callback

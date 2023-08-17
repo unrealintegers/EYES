@@ -18,7 +18,7 @@ class GuildsPlaytimeCommand(SlashCommand, name="guildsplaytime"):
         now = int(dt.utcnow().timestamp())
         prev = now - days * 86400
 
-        guild_playtime = self.bot.db.fetch_tup("""
+        guild_playtime = await self.bot.db.fetch_tup("""
             SELECT sum((CASE WHEN start_time >= %s THEN 1 
                              ELSE extract(epoch from end_time - %s) / extract(epoch from end_time - start_time) 
                              END) * value) AS playtime 

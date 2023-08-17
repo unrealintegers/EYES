@@ -19,6 +19,9 @@ class WarTracker(BotTask):
 
         self.broadcast_channels = []
 
+    async def init(self):
+        await self.update_channels()
+
         self.update_wars().start()
 
     async def update_channels(self):
@@ -109,12 +112,15 @@ class WarTracker(BotTask):
                 self.territory_counts[g] += 1
 
             for terr, (g_from, g_to) in transfers.items():
-                war_id = self.bot.db.fetch_tup("INSERT INTO territory_capture VALUES (%s, %s, %s, %s) RETURNING id",
-                                               (dt.now(), terr, g_from, g_to))[0][0]
+                war_id = await self.bot.db.fetch_tup("INSERT INTO territory_capture "
+                                                     "VALUES (%s, %s, %s, %s) RETURNING id",
+                                                     (dt.now(), terr, g_from, g_to))
+                war_id = war_id[0][0]
 
                 war_guess = self.bot.players_manager.war_candidates.get(g_from, (dt.min, []))
                 if dt.now() - war_guess[0] < td(minutes=10):
-                    self.bot.db.run_batch("INSERT INTO war_player VALUES (%s, %s)", [(war_id, p) for p in war_guess[1]])
+                    await self.bot.db.run_batch("INSERT INTO war_player VALUES (%s, %s)",
+                                                [(war_id, p) for p in war_guess[1]])
                     del self.bot.players_manager.war_candidates[g_from]
                 else:
                     self.bot.logger.warn("War not found for guild %s", g_to)

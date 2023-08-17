@@ -65,8 +65,12 @@ class EYESBot(commands.Bot):
         for sub_cls in BotTask.__subclasses__():
             self.tasks[sub_cls.__name__] = sub_cls(self)
 
+            await self.tasks[sub_cls.__name__].init()
+
     async def on_ready(self):
         self.logger.info(f"Logged in as {self.user.name}#{self.user.discriminator}")
+
+        await self.db.init()
 
         self.prefixes_manager.start()
         self.guilds_manager.start()
@@ -75,8 +79,6 @@ class EYESBot(commands.Bot):
 
         await self.instantiate_commands()
         await self.add_tasks()
-
-        await self.tasks['WarTracker'].update_channels()
 
         await self.tree.sync()
 

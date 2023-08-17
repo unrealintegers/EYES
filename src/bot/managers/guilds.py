@@ -27,8 +27,7 @@ class GuildMemberManager:
     def update(self):
         @aiocron.crontab("2 */4 * * *", start=False, tz=utc)
         async def wrapper():
-            print('yes')
-            members = self.bot.db.fetch_dict("SELECT * FROM guild_player ORDER BY guild")
+            members = await self.bot.db.fetch_dict("SELECT * FROM guild_player ORDER BY guild")
             self.g2m = {g: set(GuildMember(**m) for m in ms)
                         for g, ms in groupby(members, key=itemgetter('guild'))}
             self.m2g = {m['name']: m['guild'] for m in members}
@@ -49,7 +48,7 @@ class GuildPrefixManager:
     def update(self):
         @aiocron.crontab("5 * * * *", start=False, tz=utc)
         async def wrapper():
-            tups = self.bot.db.fetch_tup("SELECT name, prefix FROM guild_info")
+            tups = await self.bot.db.fetch_tup("SELECT name, prefix FROM guild_info")
             self.p2g = {p: g for g, p in tups}
             self.g2p = {g: p for g, p in tups}
 
