@@ -20,8 +20,8 @@ class GuildMemberManager:
         self.g2m = {}
         self.m2g = {}
 
-        self.update.call_func()
-        self.update.start()
+        self.update().call_func()
+        self.update().start()
 
     def update(self):
         @aiocron.crontab("2 */4 * * *", start=False, tz=utc)
@@ -31,6 +31,7 @@ class GuildMemberManager:
                         for g, ms in groupby(members, key=itemgetter('guild'))}
             self.m2g = {m['name']: m['guild'] for m in members}
 
+        return wrapper
 
 class GuildPrefixManager:
     def __init__(self, bot: 'EYESBot'):
