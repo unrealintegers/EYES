@@ -23,12 +23,13 @@ class GuildMemberManager:
         self.update.call_func()
         self.update.start()
 
-    @aiocron.crontab("2 */4 * * *", start=False, tz=utc)
     def update(self):
-        members = self.bot.db.fetch_dict("SELECT * FROM guild_player ORDER BY guild")
-        self.g2m = {g: set(GuildMember(**m) for m in ms)
-                    for g, ms in groupby(members, key=itemgetter('guild'))}
-        self.m2g = {m['name']: m['guild'] for m in members}
+        @aiocron.crontab("2 */4 * * *", start=False, tz=utc)
+        async def wrapper():
+            members = self.bot.db.fetch_dict("SELECT * FROM guild_player ORDER BY guild")
+            self.g2m = {g: set(GuildMember(**m) for m in ms)
+                        for g, ms in groupby(members, key=itemgetter('guild'))}
+            self.m2g = {m['name']: m['guild'] for m in members}
 
 
 class GuildPrefixManager:
