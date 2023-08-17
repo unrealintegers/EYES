@@ -119,8 +119,8 @@ class WarTracker(BotTask):
                 else:
                     self.bot.logger.warn("War not found for guild %s", g_to)
 
-                prefix_from = self.bot.prefixes_manager.g2p.get(g_from, '????')
-                prefix_to = self.bot.prefixes_manager.g2p.get(g_to, '????')
+                prefix_from = self.bot.prefixes_manager.g2p.get(g_from) or '????'
+                prefix_to = self.bot.prefixes_manager.g2p.get(g_to) or '????'
                 terr_template = self.generate_string(g_from, g_to, prefix_from, prefix_to, terr, war_guess[1])
                 for channel, g_home, terr_filter in self.broadcast_channels:
                     if terr_filter != [] and terr not in terr_filter:
