@@ -117,11 +117,11 @@ class WarTracker(BotTask):
                                                      (dt.now(), terr, g_from, g_to))
                 war_id = war_id[0][0]
 
-                war_guess = self.bot.players_manager.war_candidates.get(g_from, (dt.min, []))
+                war_guess = self.bot.players_manager.war_candidates.get(g_to, (dt.min, []))
                 if dt.now() - war_guess[0] < td(minutes=10):
                     await self.bot.db.run_batch("INSERT INTO war_player VALUES (%s, %s)",
                                                 [(war_id, p) for p in war_guess[1]])
-                    del self.bot.players_manager.war_candidates[g_from]
+                    del self.bot.players_manager.war_candidates[g_to]
                 else:
                     self.bot.logger.warn("War not found for guild %s", g_to)
 
