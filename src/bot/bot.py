@@ -69,6 +69,7 @@ class EYESBot(commands.Bot):
         self.logger.info(f"Logged in as {self.user.name}#{self.user.discriminator}")
 
         self.prefixes_manager.start()
+        self.guilds_manager.start()
         self.map_manager.init()
         await self.msg.update_replacements()
 

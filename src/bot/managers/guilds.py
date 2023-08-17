@@ -20,18 +20,21 @@ class GuildMemberManager:
         self.g2m = {}
         self.m2g = {}
 
+    def start(self):
         self.update().call_func()
         self.update().start()
 
     def update(self):
         @aiocron.crontab("2 */4 * * *", start=False, tz=utc)
         async def wrapper():
+            print('yes')
             members = self.bot.db.fetch_dict("SELECT * FROM guild_player ORDER BY guild")
             self.g2m = {g: set(GuildMember(**m) for m in ms)
                         for g, ms in groupby(members, key=itemgetter('guild'))}
             self.m2g = {m['name']: m['guild'] for m in members}
 
         return wrapper
+
 
 class GuildPrefixManager:
     def __init__(self, bot: 'EYESBot'):
