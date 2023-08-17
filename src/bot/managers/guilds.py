@@ -24,7 +24,7 @@ class GuildMemberManager:
         self.update.start()
 
     @aiocron.crontab("2 */4 * * *", start=False, tz=utc)
-    def update(self):
+    async def update(self):
         members = self.bot.db.fetch_dict("SELECT * FROM guild_player ORDER BY guild")
         self.g2m = {g: set(GuildMember(**m) for m in ms)
                     for g, ms in groupby(members, key=itemgetter('guild'))}
