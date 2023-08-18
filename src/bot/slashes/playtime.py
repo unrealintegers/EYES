@@ -1,4 +1,5 @@
 from datetime import datetime as dt
+from datetime import timedelta as td
 
 import discord.app_commands as slash
 from discord import Interaction
@@ -14,8 +15,8 @@ class PlaytimeCommand(SlashCommand, name="playtime"):
                     days="how many days of playtime")
     async def callback(self, ictx: Interaction, player: str, days: int):
         """Shows a player's playtime"""
-        now = int(dt.utcnow().timestamp())
-        prev = now - days * 86400
+        now = dt.utcnow()
+        prev = now - td(days=days)
 
         pt = await self.bot.db.fetch_tup("""
             SELECT sum((CASE WHEN start_time >= %s THEN 1
@@ -23,5 +24,5 @@ class PlaytimeCommand(SlashCommand, name="playtime"):
                              END) * value) AS playtime
             FROM player_playtime WHERE player = %s AND end_time >= %s
         """, (prev, prev, player, prev))
-        pt = pt[0] or 0
+        pt = int(pt[0][0] or 0)
         await ictx.response.send_message(f"`{player}`'s `{days}d` playtime: `{pt // 60}h{pt % 60}m`")
