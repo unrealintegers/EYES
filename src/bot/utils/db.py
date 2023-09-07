@@ -21,6 +21,12 @@ class DatabaseManager:
     def __getattr__(self, item):
         return getattr(self.conn, item)
 
+    async def copy_to(self, query, rows):
+        async with self.conn.cursor() as cur:
+            async with cur.copy(query) as copy:
+                for row in rows:
+                    await copy.write_row(row)
+
     async def run(self, query, vars=tuple()):
         async with self.conn.cursor() as cur:
             await cur.execute(query, vars)

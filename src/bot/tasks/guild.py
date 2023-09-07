@@ -40,8 +40,8 @@ class GuildListUpdater(BotTask):
 
             guild_list = [(g,) for g in guilds if g not in existing_guilds]
             guild_update = {(g, dt.utcnow(), 0, td(days=1)) for g in guilds if g not in existing_guilds}
-            await self.bot.db.run_batch("INSERT INTO guild_info (name) VALUES (%s)", guild_list)
-            await self.bot.db.run_batch("INSERT INTO guild_update_info VALUES (%s, %s, %s, %s)", guild_update)
+            await self.bot.db.copy_to("COPY guild_info (name) FROM STDIN", guild_list)
+            await self.bot.db.copy_to("COPY guild_update_info FROM STDIN", guild_update)
 
             # remove old guilds
             deleted_guilds = {(g,) for g in existing_guilds if g not in guilds}
@@ -141,7 +141,7 @@ class GuildUpdater(BotTask):
         guild_player_insert = {(guild_name, uuid, member['name'], member['rank'],
                                 member['joined'], member['contributed'])
                                for uuid, member in members.items() if uuid not in old_members.keys()}
-        await self.bot.db.run_batch("INSERT INTO guild_player VALUES (%s, %s, %s, %s, %s, %s)", guild_player_insert)
+        await self.bot.db.copy_to("COPY guild_player FROM STDIN", guild_player_insert)
 
         # Member history tracking
         await self.process_member_changes(old_members, members)
@@ -194,5 +194,5 @@ class GuildUpdater(BotTask):
             total += gained
 
         # TODO: implement start/end times
-        await self.bot.db.run_batch("INSERT INTO player_xp VALUES (%s, %s, %s, %s)", update_list)
+        await self.bot.db.copy_to("COPY player_xp FROM STDIN", update_list)
         await self.bot.db.run("INSERT INTO guild_xp VALUES (%s, %s, %s)", (guild_name, now, total))
