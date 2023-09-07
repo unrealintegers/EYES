@@ -27,7 +27,7 @@ class PlayerListUpdater(BotTask):
             self.bot.players_manager.update(players)
 
             # Update playtime
-            if playtime := self.bot.tasks.get('PlayerPlaytimeUpdater'):
+            if playtime := self.bot.tasks.get('PlaytimeUpdater'):
                 await playtime.update(set(sum(players.values(), [])))
 
         return callback
