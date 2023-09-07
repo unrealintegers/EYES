@@ -112,9 +112,11 @@ class WarTracker(BotTask):
                 self.territory_counts[g] += 1
 
             for terr, (g_from, g_to) in transfers.items():
-                war_id = await self.bot.db.fetch_tup("INSERT INTO territory_capture "
-                                                     "VALUES (%s, %s, %s, %s) RETURNING id",
-                                                     (dt.now(), terr, g_from, g_to))
+                war_id = await self.bot.db.fetch_tup(
+                    "INSERT INTO territory_capture (time, territory, guild_from, guild_to) "
+                    "VALUES (%s, %s, %s, %s) RETURNING id",
+                    (dt.now(), terr, g_from, g_to)
+                )
                 war_id = war_id[0][0]
 
                 war_guess = self.bot.players_manager.war_candidates.get(g_to, (dt.min, []))
