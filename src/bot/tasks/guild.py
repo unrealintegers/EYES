@@ -17,45 +17,43 @@ class GuildListUpdater(BotTask):
     def __init__(self, bot: EYESBot):
         super().__init__(bot)
 
+        self.update = aiocron.crontab("0 */3 * * *", func=self._update, start=False, tz=utc)
+
     async def init(self):
         # Do one update at the start
-        self.update().call_func()
-        self.update().start()
+        self.update.call_func()
+        self.update.start()
 
-    def update(self):
-        @aiocron.crontab("0 */3 * * *", start=False, tz=utc)
-        async def wrapper():
-            async with aiohttp.ClientSession() as session:
-                async with session.get(WynncraftAPI.GUILD_LIST) as response:
-                    if not response.ok:
-                        self.bot.logger.error("Failed to fetch Guild List from Wynn API!")
-                        return
+    async def _update(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.get(WynncraftAPI.GUILD_LIST) as response:
+                if not response.ok:
+                    self.bot.logger.error("Failed to fetch Guild List from Wynn API!")
+                    return
 
-                    response = await response.json()
+                response = await response.json()
 
-            existing_guilds = await self.bot.db.fetch_tup("SELECT name FROM guild_update_info")
-            existing_guilds = list(*zip(*existing_guilds))
+        existing_guilds = await self.bot.db.fetch_tup("SELECT name FROM guild_update_info")
+        existing_guilds = list(*zip(*existing_guilds))
 
-            guilds = response['guilds']
+        guilds = response['guilds']
 
-            guild_list = [(g,) for g in guilds if g not in existing_guilds]
-            guild_update = {(g, dt.utcnow(), 0, td(days=1)) for g in guilds if g not in existing_guilds}
-            await self.bot.db.copy_to("COPY guild_info (name) FROM STDIN", guild_list)
-            await self.bot.db.copy_to("COPY guild_update_info FROM STDIN", guild_update)
+        guild_list = [(g,) for g in guilds if g not in existing_guilds]
+        guild_update = {(g, dt.utcnow(), 0, td(days=1)) for g in guilds if g not in existing_guilds}
+        await self.bot.db.copy_to("COPY guild_info (name) FROM STDIN", guild_list)
+        await self.bot.db.copy_to("COPY guild_update_info FROM STDIN", guild_update)
 
-            # remove old guilds
-            deleted_guilds = {(g,) for g in existing_guilds if g not in guilds}
-            await self.bot.db.run_batch("""
-                WITH deleted_guild AS (
-                    DELETE FROM guild_info 
-                    WHERE name = %s
-                    RETURNING * 
-                ) INSERT INTO deleted_guild_info (name, prefix, level, size, deleted) 
-                SELECT deleted_guild.*, NOW() FROM deleted_guild
-            """, deleted_guilds)
-            # TODO: Member history
-
-        return wrapper
+        # remove old guilds
+        deleted_guilds = {(g,) for g in existing_guilds if g not in guilds}
+        await self.bot.db.run_batch("""
+            WITH deleted_guild AS (
+                DELETE FROM guild_info 
+                WHERE name = %s
+                RETURNING * 
+            ) INSERT INTO deleted_guild_info (name, prefix, level, size, deleted) 
+            SELECT deleted_guild.*, NOW() FROM deleted_guild
+        """, deleted_guilds)
+        # TODO: Member history
 
 
 class GuildUpdater(BotTask):
@@ -67,24 +65,22 @@ class GuildUpdater(BotTask):
 
         self.pq = []
 
+        self.next = aiocron.crontab('* * * * * */3', func=self._next, start=False)
+
     async def init(self):
         await self.build_pq()
 
-        self.next().start()
+        self.next.start()
 
-    def next(self):
-        @aiocron.crontab('* * * * * */3', start=False)
-        async def callback():
-            if self.pq:  # is not empty
-                # We check that it is in fact time to update the smallest item
-                if dt.now().timestamp() > self.pq[0][0]:
-                    # Gets the first element and updates it
-                    _, guild_name = heapq.heappop(self.pq)
-                    if next_update := await self.update_guild(guild_name):
-                        # Re-adds it back to the queue with the scheduled next update
-                        heapq.heappush(self.pq, (next_update, guild_name))
-
-        return callback
+    async def _next(self):
+        if self.pq:  # is not empty
+            # We check that it is in fact time to update the smallest item
+            if dt.now().timestamp() > self.pq[0][0]:
+                # Gets the first element and updates it
+                _, guild_name = heapq.heappop(self.pq)
+                if next_update := await self.update_guild(guild_name):
+                    # Re-adds it back to the queue with the scheduled next update
+                    heapq.heappush(self.pq, (next_update, guild_name))
 
     async def build_pq(self):
         guilds = await self.bot.db.fetch_dict("SELECT name, next_update FROM guild_update_info")
@@ -116,7 +112,7 @@ class GuildUpdater(BotTask):
     async def update_guild(self, guild_name) -> Optional[float]:
         """Fetches 1 guild from the API and updates it."""
 
-        url = WynncraftAPI.GUILD_STATS.format(guild_name)
+        url = WynncraftAPI.GUILD_STATS.format(guild_name=guild_name)
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 if not response.ok:

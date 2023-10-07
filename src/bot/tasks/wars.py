@@ -4,7 +4,6 @@ from datetime import timedelta as td
 
 import aiocron
 import aiohttp
-import requests
 
 from ..bot import BotTask, EYESBot
 from ..managers import ConfigManager
@@ -20,10 +19,12 @@ class WarTracker(BotTask):
 
         self.broadcast_channels = []
 
+        self.update_wars = aiocron.crontab('* * * * * */10', func=self._update_wars, start=False)
+
     async def init(self):
         await self.update_channels()
 
-        self.update_wars().start()
+        self.update_wars.start()
 
     async def update_channels(self):
         channels_data = ConfigManager.get_static('warchannels')
@@ -98,49 +99,45 @@ class WarTracker(BotTask):
         style_terr = self.get_territory_style(territory, prefix_home)
         return format_string.format(fmt_from, fmt_to, style_terr)
 
-    def update_wars(self):
-        @aiocron.crontab('* * * * * */10', start=False)
-        async def callback():
-            if not self.last_territories:
-                self.last_territories = await self.get_territories()
-                return
+    async def _update_wars(self):
+        if not self.last_territories:
+            self.last_territories = await self.get_territories()
+            return
 
-            territories = await self.get_territories()
+        territories = await self.get_territories()
 
-            territories = {k: (terr, t) if self.last_territories[k][1] < territories[k][1] else self.last_territories[k]
-                           for k, (terr, t) in territories.items()}
-            transfers = {k: (self.last_territories[k][0], territories[k][0]) for k in self.last_territories
-                         if self.last_territories[k][0] != territories[k][0]
-                         and self.last_territories[k][1] < territories[k][1]}
-            self.territory_counts = defaultdict(int)
-            for _, (g, _) in self.last_territories.items():
-                self.territory_counts[g] += 1
+        territories = {k: (terr, t) if self.last_territories[k][1] < territories[k][1] else self.last_territories[k]
+                       for k, (terr, t) in territories.items()}
+        transfers = {k: (self.last_territories[k][0], territories[k][0]) for k in self.last_territories
+                     if self.last_territories[k][0] != territories[k][0]
+                     and self.last_territories[k][1] < territories[k][1]}
+        self.territory_counts = defaultdict(int)
+        for _, (g, _) in self.last_territories.items():
+            self.territory_counts[g] += 1
 
-            for terr, (g_from, g_to) in transfers.items():
-                war_id = await self.bot.db.fetch_tup(
-                    "INSERT INTO territory_capture (time, territory, guild_from, guild_to) "
-                    "VALUES (%s, %s, %s, %s) RETURNING id",
-                    (dt.now(), terr, g_from, g_to)
-                )
-                war_id = war_id[0][0]
+        for terr, (g_from, g_to) in transfers.items():
+            war_id = await self.bot.db.fetch_tup(
+                "INSERT INTO territory_capture (time, territory, guild_from, guild_to) "
+                "VALUES (%s, %s, %s, %s) RETURNING id",
+                (dt.now(), terr, g_from, g_to)
+            )
+            war_id = war_id[0][0]
 
-                war_guess = self.bot.players_manager.war_candidates.get(g_to, (dt.min, []))
-                if dt.now() - war_guess[0] < td(minutes=10):
-                    await self.bot.db.copy_to("COPY war_player FROM STDIN", [(war_id, p) for p in war_guess[1]])
-                    del self.bot.players_manager.war_candidates[g_to]
-                else:
-                    self.bot.logger.warn("War not found for guild %s", g_to)
+            war_guess = self.bot.players_manager.war_candidates.get(g_to, (dt.min, []))
+            if dt.now() - war_guess[0] < td(minutes=10):
+                await self.bot.db.copy_to("COPY war_player FROM STDIN", [(war_id, p) for p in war_guess[1]])
+                del self.bot.players_manager.war_candidates[g_to]
+            else:
+                self.bot.logger.warn("War not found for guild %s", g_to)
 
-                prefix_from = self.bot.prefixes_manager.g2p.get(g_from) or '????'
-                prefix_to = self.bot.prefixes_manager.g2p.get(g_to) or '????'
-                terr_template = self.generate_string(g_from, g_to, prefix_from, prefix_to, terr, war_guess[1])
-                for channel, g_home, terr_filter in self.broadcast_channels:
-                    if terr_filter != [] and terr not in terr_filter:
-                        continue
+            prefix_from = self.bot.prefixes_manager.g2p.get(g_from) or '????'
+            prefix_to = self.bot.prefixes_manager.g2p.get(g_to) or '????'
+            terr_template = self.generate_string(g_from, g_to, prefix_from, prefix_to, terr, war_guess[1])
+            for channel, g_home, terr_filter in self.broadcast_channels:
+                if terr_filter != [] and terr not in terr_filter:
+                    continue
 
-                    msg_content = self.format_generated_string(terr_template, terr, prefix_from, prefix_to, g_home)
-                    await channel.send(msg_content)
+                msg_content = self.format_generated_string(terr_template, terr, prefix_from, prefix_to, g_home)
+                await channel.send(msg_content)
 
-            self.last_territories = territories
-
-        return callback
+        self.last_territories = territories

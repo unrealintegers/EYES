@@ -74,8 +74,10 @@ class RemindCommand(SlashCommand, name="remind"):
 
         self.DATE_FORMAT = r"%d/%m/%Y %H:%M:%S"
 
-        self.update().call_func()
-        self.update().start()
+        self.update = aiocron.crontab("0 * * * *", func=self._update, start=False)
+
+        self.update.call_func()
+        self.update.start()
 
     def path(self):
         self.bot.db.path = None
@@ -159,18 +161,14 @@ class RemindCommand(SlashCommand, name="remind"):
 
         self.path().child(reminder_id).child('link').set(response.jump_url)
 
-    def update(self):
-        @aiocron.crontab("0 * * * *")
-        async def wrapper():
-            after_1h = dt.utcnow() + td(hours=1)
+    async def _update(self):
+        after_1h = dt.utcnow() + td(hours=1)
 
-            if not self.path().get().key():
-                return
+        if not self.path().get().key():
+            return
 
-            reminders = self.path().order_by_child('timestamp').end_at(after_1h.timestamp()).get().each()
+        reminders = self.path().order_by_child('timestamp').end_at(after_1h.timestamp()).get().each()
 
-            for reminder in reminders:
-                time = dt.fromtimestamp(reminder.val()['timestamp']) - dt.utcnow()
-                await self.remind(reminder.key(), time)
-
-        return wrapper
+        for reminder in reminders:
+            time = dt.fromtimestamp(reminder.val()['timestamp']) - dt.utcnow()
+            await self.remind(reminder.key(), time)
