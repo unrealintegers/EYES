@@ -2,6 +2,7 @@ import aiocron
 import aiohttp
 
 from ..bot import EYESBot, BotTask
+from ..models import WynncraftAPI
 
 
 class PlayerListUpdater(BotTask):
@@ -15,7 +16,7 @@ class PlayerListUpdater(BotTask):
         @aiocron.crontab('* * * * * */6', start=False)
         async def callback():
             async with aiohttp.ClientSession() as session:
-                async with session.get("https://api.wynncraft.com/public_api.php?action=onlinePlayers") as response:
+                async with session.get(WynncraftAPI.ONLINE_PLAYERS) as response:
                     if not response.ok:
                         return
 

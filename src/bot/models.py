@@ -84,6 +84,9 @@ class BotTask:
 
 class WynncraftAPI:
     TERRITORIES = r"https://api.wynncraft.com/public_api.php?action=territoryList"
+    GUILD_LIST = r"https://api.wynncraft.com/public_api.php?action=guildList"
+    GUILD_STATS = r"https://api.wynncraft.com/public_api.php?action=guildStats&command={guild_name}"
+    ONLINE_PLAYERS = r"https://api.wynncraft.com/public_api.php?action=onlinePlayers"
 
 
 def choice(name):

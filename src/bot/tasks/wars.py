@@ -3,6 +3,7 @@ from datetime import datetime as dt
 from datetime import timedelta as td
 
 import aiocron
+import aiohttp
 import requests
 
 from ..bot import BotTask, EYESBot
@@ -14,7 +15,7 @@ class WarTracker(BotTask):
     def __init__(self, bot: EYESBot):
         super().__init__(bot)
 
-        self.last_territories = self.get_territories()
+        self.last_territories = None
         self.territory_counts = defaultdict(int)
 
         self.broadcast_channels = []
@@ -51,13 +52,16 @@ class WarTracker(BotTask):
                 else:
                     self.bot.logger.info(f"Guild {g_id} not found for war channels.")
 
-    @classmethod
-    def get_territories(cls):
-        resp = requests.get(WynncraftAPI.TERRITORIES)
-        if not resp.ok:
-            return None
+    async def get_territories(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.get(WynncraftAPI.TERRITORIES) as response:
+                if not response.ok:
+                    self.bot.logger.error("Failed to fetch Territories from Wynn API!")
+                    return None
 
-        territories = resp.json()['territories']
+                territories = await response.json()
+                territories = territories.get('territories', {})
+
         return {t: (d['guild'], dt.strptime(d['acquired'], "%Y-%m-%d %H:%M:%S")) for t, d in territories.items()}
 
     def generate_string(self, g_from, g_to, prefix_from, prefix_to, territory, players):
@@ -97,10 +101,11 @@ class WarTracker(BotTask):
     def update_wars(self):
         @aiocron.crontab('* * * * * */10', start=False)
         async def callback():
-            try:
-                territories = self.get_territories()
-            except requests.exceptions.ConnectionError:
+            if not self.last_territories:
+                self.last_territories = await self.get_territories()
                 return
+
+            territories = await self.get_territories()
 
             territories = {k: (terr, t) if self.last_territories[k][1] < territories[k][1] else self.last_territories[k]
                            for k, (terr, t) in territories.items()}

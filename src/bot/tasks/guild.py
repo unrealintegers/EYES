@@ -5,10 +5,10 @@ from typing import Optional
 
 import aiocron
 import aiohttp
-import requests
 from pytz import utc
 
 from ..bot import EYESBot, BotTask
+from ..models import WynncraftAPI
 from ..utils.wynn import GuildMember
 
 
@@ -25,13 +25,13 @@ class GuildListUpdater(BotTask):
     def update(self):
         @aiocron.crontab("0 */3 * * *", start=False, tz=utc)
         async def wrapper():
-            response = requests.get("https://api.wynncraft.com/public_api.php?action=guildList")
+            async with aiohttp.ClientSession() as session:
+                async with session.get(WynncraftAPI.GUILD_LIST) as response:
+                    if not response.ok:
+                        self.bot.logger.error("Failed to fetch Guild List from Wynn API!")
+                        return
 
-            if not response.ok:
-                self.bot.logger.error("Failed to fetch from Wynn API!")
-                return
-            else:
-                response = response.json()
+                    response = await response.json()
 
             existing_guilds = await self.bot.db.fetch_tup("SELECT name FROM guild_update_info")
             existing_guilds = list(*zip(*existing_guilds))
@@ -115,13 +115,12 @@ class GuildUpdater(BotTask):
 
     async def update_guild(self, guild_name) -> Optional[float]:
         """Fetches 1 guild from the API and updates it."""
-        # self.bot.logger.info(f"Updating Guild {guild_name}.")
 
-        url = f"https://api.wynncraft.com/public_api.php?action=guildStats&command={guild_name}"
+        url = WynncraftAPI.GUILD_STATS.format(guild_name)
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 if not response.ok:
-                    self.bot.logger.error(f"Failed to fetch from {url}.")
+                    self.bot.logger.error(f"Failed to fetch Stats of {guild_name} from Wynncraft API.")
                     return
                 else:
                     response = await response.json()
@@ -131,6 +130,7 @@ class GuildUpdater(BotTask):
 
         # Now we get the members and return a number for change between this and last iteration
         member_info = list(map(lambda m: GuildMember.from_data(m).to_dict(), response['members']))
+        print(guild_name)
         old_member_info = await self.bot.db.fetch_dict("SELECT name, uuid, rank, joined, contributed FROM guild_player "
                                                        "WHERE guild = %s", (guild_name,))
 
