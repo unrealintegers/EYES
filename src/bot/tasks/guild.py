@@ -38,9 +38,9 @@ class GuildListUpdater(BotTask):
 
         guilds = response['guilds']
 
-        guild_list = [(g,) for g in guilds if g not in existing_guilds]
+        new_guilds = [(g,) for g in guilds if g not in existing_guilds]
         guild_update = {(g, dt.utcnow(), 0, td(days=1)) for g in guilds if g not in existing_guilds}
-        await self.bot.db.copy_to("COPY guild_info (name) FROM STDIN", guild_list)
+        await self.bot.db.copy_to("COPY guild_info (name) FROM STDIN", new_guilds)
         await self.bot.db.copy_to("COPY guild_update_info FROM STDIN", guild_update)
 
         # remove old guilds

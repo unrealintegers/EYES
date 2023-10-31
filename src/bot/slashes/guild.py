@@ -1,6 +1,7 @@
 import random
 from collections import OrderedDict
 from datetime import datetime as dt
+from datetime import timedelta as td
 from itertools import product
 from typing import List, Dict
 
@@ -172,8 +173,7 @@ class GuildCommand(SlashGroup, name="guild"):
                     days="how many days of playtime")
     async def playtime(self, ictx: Interaction, guild: str, days: int):
         """Shows the playtime leaderboard of a guild"""
-        now = int(dt.utcnow().timestamp())
-        prev = now - days * 86400
+        prev = dt.utcnow() - td(days=days)
 
         guild = self.parse_guild(guild)
 

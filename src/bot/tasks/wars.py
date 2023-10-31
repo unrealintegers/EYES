@@ -106,6 +106,10 @@ class WarTracker(BotTask):
 
         territories = await self.get_territories()
 
+        if territories.keys() != self.last_territories.keys():
+            self.last_territories = territories
+            return
+
         territories = {k: (terr, t) if self.last_territories[k][1] < territories[k][1] else self.last_territories[k]
                        for k, (terr, t) in territories.items()}
         transfers = {k: (self.last_territories[k][0], territories[k][0]) for k in self.last_territories
