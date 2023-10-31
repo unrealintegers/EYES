@@ -33,18 +33,20 @@ class GuildListUpdater(BotTask):
 
                 response = await response.json()
 
-        existing_guilds = await self.bot.db.fetch_tup("SELECT name FROM guild_update_info")
-        existing_guilds = list(*zip(*existing_guilds))
+        info_existing = await self.bot.db.fetch_tup("SELECT name FROM guild_info")
+        info_existing = list(*zip(*info_existing))
+        update_existing = await self.bot.db.fetch_tup("SELECT name FROM guild_update_info")
+        update_existing = list(*zip(*update_existing))
 
         guilds = response['guilds']
 
-        new_guilds = [(g,) for g in guilds if g not in existing_guilds]
-        guild_update = {(g, dt.utcnow(), 0, td(days=1)) for g in guilds if g not in existing_guilds}
+        new_guilds = [(g,) for g in guilds if g not in info_existing]
+        guild_update = {(g, dt.utcnow(), 0, td(days=1)) for g in guilds if g not in update_existing}
         await self.bot.db.copy_to("COPY guild_info (name) FROM STDIN", new_guilds)
         await self.bot.db.copy_to("COPY guild_update_info FROM STDIN", guild_update)
 
         # remove old guilds
-        deleted_guilds = {(g,) for g in existing_guilds if g not in guilds}
+        deleted_guilds = {(g,) for g in info_existing if g not in guilds}
         await self.bot.db.run_batch("""
             WITH deleted_guild AS (
                 DELETE FROM guild_info 
