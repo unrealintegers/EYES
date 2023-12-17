@@ -181,8 +181,8 @@ class GuildCommand(SlashGroup, name="guild"):
                 SELECT gp.name, SUM(pp.value), EXTRACT(EPOCH FROM MAX(pp.end_time)) 
                 FROM guild_player gp
                 LEFT JOIN player_playtime pp
-                ON gp.guild = %s
-                AND gp.name = pp.player
+                ON gp.name = pp.player
+                WHERE gp.guild = %s
                 AND pp.end_time >= %s
                 GROUP BY gp.name
         """, (guild, prev))
