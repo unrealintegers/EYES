@@ -190,8 +190,8 @@ class GuildCommand(SlashGroup, name="guild"):
         playtime.sort(key=lambda x: (-x[1], -x[2], x[0]))
 
         names, playtimes, seens = zip(*playtime)
-        seens = list(map(lambda x: f"<t:{x:d}:R>" if x >= 0 else "Never", seens))
-        playtimes = list(map(lambda x: f"{x // 60:d}h{x % 60:d}m", playtimes))
+        seens = list(map(lambda x: f"<t:{x:0.0f}:R>" if x >= 0 else "Never", seens))
+        playtimes = list(map(lambda x: f"{x // 60:0.0f}h{x % 60:0.0f}m", playtimes))
         data = {"Member": names, "Playtime": playtimes, "Last Seen": seens}
 
         # 24 bit colour
