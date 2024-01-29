@@ -33,7 +33,7 @@ class PlayerManager:
 
         if diff:
             # (world, guild, [player])
-            diff = groupby(diff, key=(lambda w, g, p: (w, g)))
+            diff = groupby(diff, key=(lambda x: (x[0], x[1])))
             for (w, g), wgps in diff:
                 ps = zip(*wgps)[2]
                 # Always change when there are 2 or more players, or if the last change was more than 10 minutes ago
