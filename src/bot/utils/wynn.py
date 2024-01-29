@@ -9,19 +9,19 @@ from datetime import datetime as dt
 from dateutil import parser as dtparser
 
 RANKS = [
-    'RECRUIT',
-    'RECRUITER',
-    'CAPTAIN',
-    'STRATEGIST',
-    'CHIEF',
-    'OWNER'
+    'recruit',
+    'recruiter',
+    'captain',
+    'strategist',
+    'chief',
+    'owner'
 ]
 
 
 class GuildMember:
     def __init__(self,
                  name: str,
-                 uuid: str,
+                 uuid: uuid_.UUID,
                  rank: int,
                  joined: float | dt,
                  contributed: int,
@@ -42,14 +42,13 @@ class GuildMember:
         return f"<GuildMember name={self.name}>"
 
     @classmethod
-    def from_data(cls, data):
+    def from_data(cls, key, data):
+        data['name'] = data.pop('username')
         if data['rank']:
             data['rank'] = RANKS.index(data['rank'])
         if data['joined']:
             data['joined'] = dtparser.parse(data['joined'])
-        if data['uuid']:
-            data['uuid'] = uuid_.UUID(data['uuid'])
-        return cls(**data)
+        return cls(uuid=uuid_.UUID(key), **data)
 
     # { name, uuid: str, rank: int, joined: float (timestamp), contributed: int }
     def to_dict(self):

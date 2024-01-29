@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import defaultdict, abc
 from datetime import datetime as dt
 
 from ..bot import EYESBot, BotTask
@@ -11,7 +11,7 @@ class PlaytimeUpdater(BotTask):
         self.interval = 6
         self.last_update = dt.utcnow()
 
-    async def update(self, players: list[str]):
+    async def update(self, players: abc.Collection[str]):
         now = dt.utcnow()
         period = now - self.last_update
         value = self.interval / 60

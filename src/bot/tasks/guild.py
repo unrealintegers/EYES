@@ -1,3 +1,4 @@
+from functools import reduce
 import heapq
 from datetime import datetime as dt
 from datetime import timedelta as td
@@ -31,17 +32,15 @@ class GuildListUpdater(BotTask):
                     self.bot.logger.error("Failed to fetch Guild List from Wynn API!")
                     return
 
-                response = await response.json()
+                guilds = await response.json()
 
         info_existing = await self.bot.db.fetch_tup("SELECT name FROM guild_info")
         info_existing = list(*zip(*info_existing))
         update_existing = await self.bot.db.fetch_tup("SELECT name FROM guild_update_info")
         update_existing = list(*zip(*update_existing))
 
-        guilds = response['guilds']
-
         new_guilds = [(g,) for g in guilds if g not in info_existing]
-        guild_update = {(g, dt.utcnow(), 0, td(days=1)) for g in guilds if g not in update_existing}
+        guild_update = [(g, dt.utcnow(), 0, td(days=1)) for g in guilds if g not in update_existing]
         await self.bot.db.copy_to("COPY guild_info (name) FROM STDIN", new_guilds)
         await self.bot.db.copy_to("COPY guild_update_info FROM STDIN", guild_update)
 
@@ -127,7 +126,11 @@ class GuildUpdater(BotTask):
         prefix = response['prefix']
 
         # Now we get the members and return a number for change between this and last iteration
-        member_info = list(map(lambda m: GuildMember.from_data(m).to_dict(), response['members']))
+        members = reduce(dict.__or__, ({} if rank == 'total' else
+                                       {k: {**d, 'rank': rank} for k, d in v.items()}
+                                       for rank, v in response['members'].items()), {})
+
+        member_info = list(map(lambda m: GuildMember.from_data(*m).to_dict(), members.items()))
         print(guild_name)
         old_member_info = await self.bot.db.fetch_dict("SELECT name, uuid, rank, joined, contributed FROM guild_player "
                                                        "WHERE guild = %s", (guild_name,))
@@ -135,10 +138,10 @@ class GuildUpdater(BotTask):
         members = {member['uuid']: member for member in member_info}
         old_members = {member['uuid']: member for member in old_member_info}
         num_changes = len(members.keys() | old_members.keys()) - len(members.keys() & old_members.keys())
-
-        guild_player_insert = {(guild_name, uuid, member['name'], member['rank'],
+        guild_player_insert = [(guild_name, uuid, member['name'], member['rank'],
                                 member['joined'], member['contributed'])
-                               for uuid, member in members.items() if uuid not in old_members.keys()}
+                               for uuid, member in members.items() if uuid not in old_members.keys()]
+
         await self.bot.db.copy_to("COPY guild_player FROM STDIN", guild_player_insert)
 
         # Member history tracking

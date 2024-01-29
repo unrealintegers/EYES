@@ -4,6 +4,7 @@ from datetime import timedelta as td
 
 import aiocron
 import aiohttp
+from dateutil.parser import isoparse
 
 from ..bot import BotTask, EYESBot
 from ..managers import ConfigManager
@@ -61,9 +62,9 @@ class WarTracker(BotTask):
                     return None
 
                 territories = await response.json()
-                territories = territories.get('territories', {})
 
-        return {t: (d['guild'], dt.strptime(d['acquired'], "%Y-%m-%d %H:%M:%S")) for t, d in territories.items()}
+        return {t: (d['guild']['name'], isoparse(d['acquired']))
+                for t, d in territories.items()}
 
     def generate_string(self, g_from, g_to, prefix_from, prefix_to, territory, players):
         template = "```ansi\n{}[{{}}m{}[0m[{}] -> [{{}}m{}[0m[{}]{} | [{{}}{}m{} [{}]\n```"

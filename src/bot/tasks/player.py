@@ -18,16 +18,16 @@ class PlayerListUpdater(BotTask):
         async with aiohttp.ClientSession() as session:
             async with session.get(WynncraftAPI.ONLINE_PLAYERS) as response:
                 if not response.ok:
+                    self.bot.logger.warn("Failed to fetch Online Players from Wynn API!")
                     return
 
-                players = await response.json()
-
-        del players['request']
+                players : dict = await response.json()
+                players = players['players']
 
         # Update player list
         self.bot.players_manager.update(players)
 
         # Update playtime
         if playtime := self.bot.tasks.get('PlaytimeUpdater'):
-            await playtime.update(set(sum(players.values(), [])))
+            await playtime.update(players.keys())
 

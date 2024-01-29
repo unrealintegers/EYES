@@ -3,7 +3,7 @@ from __future__ import annotations
 import typing
 from datetime import datetime as dt
 from datetime import timedelta as td
-from functools import reduce
+from itertools import groupby
 
 if typing.TYPE_CHECKING:
     from ..bot import EYESBot
@@ -18,31 +18,27 @@ class PlayerManager:
     def __init__(self, bot: 'EYESBot'):
         self.bot = bot
 
-        self.dict: dict = {}
-        self.old_all: set[str] = set()
-        self.all: set[str] = set()
-        self.worlds: dict = {}
+        self.old_dict: dict[str, str] = {}
+        self.dict: dict[str, str] = {}
 
         self.war_candidates: dict = {}
 
-    def update(self, players):
-        # world -> [players]
-        diff = {w: list(filter(lambda p: p not in self.dict.get(w, []) and (p in self.all or p in self.old_all), p))
-                for w, p in players.items()}
-        # world -> player -> guild
-        diff = {w: {p: self.bot.guilds_manager.m2g[p] for p in ps if p in self.bot.guilds_manager.m2g}
-                for w, ps in diff.items() if ps}
-        # (world, guild, players)
-        diff = [(w, g, set(p for p, g_ in pg.items() if g_ == g))
-                for w, pg in diff.items() for g in set(pg.values())]
+    def update(self, players: dict[str, str]):
+        players_set = set(players.items())
+        # (player, world)
+        diff = {t for t in players_set.difference(set(self.old_dict.items())) if t[0] in set(self.old_dict.keys())}
+        # (world, guild, player)
+        diff = sorted((w, self.bot.guilds_manager.m2g[p], p) for p, w in diff if p in self.bot.guilds_manager.m2g)
+        print(diff)
 
         if diff:
-            for w, g, ps in diff:
+            # (world, guild, [player])
+            diff = groupby(diff, key=(lambda w, g, p: (w, g)))
+            for (w, g), wgps in diff:
+                ps = zip(*wgps)[2]
                 # Always change when there are 2 or more players, or if the last change was more than 10 minutes ago
                 if len(ps) > 1 or self.war_candidates.get(g, [dt.min])[0] < dt.now() - td(minutes=10):
                     self.war_candidates[g] = (dt.now(), ps)
 
+        self.old_dict = self.dict
         self.dict = players
-        self.old_all = self.all
-        self.all = set(sum(players.values(), []))
-        self.worlds = reduce(lambda a, b: a | b, map(lambda i: {x: i[0] for x in i[1]}, self.dict.items()))
