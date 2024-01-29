@@ -35,7 +35,7 @@ class PlayerManager:
             # (world, guild, [player])
             diff = groupby(diff, key=(lambda x: (x[0], x[1])))
             for (w, g), wgps in diff:
-                ps = zip(*wgps)[2]
+                ps = list(zip(*wgps))[2]
                 # Always change when there are 2 or more players, or if the last change was more than 10 minutes ago
                 if len(ps) > 1 or self.war_candidates.get(g, [dt.min])[0] < dt.now() - td(minutes=10):
                     self.war_candidates[g] = (dt.now(), ps)
