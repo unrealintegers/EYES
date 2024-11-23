@@ -23,6 +23,10 @@ class PlayerManager:
 
         self.war_candidates: dict = {}
 
+    @property
+    def all(self):
+        return self.dict.keys()
+
     def update(self, players: dict[str, str]):
         players_set = set(players.items())
         # (player, world)
