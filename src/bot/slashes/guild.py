@@ -95,7 +95,7 @@ class GuildCommand(SlashGroup, name="guild"):
         """Lists online players in a guild"""
         parsed = self.parse_guild(guild)
 
-        members = self.bot.guilds_manager.get(parsed)
+        members = self.bot.guilds_manager.g2m.get(parsed)
         online_members = filter(lambda m: m.name in self.bot.players_manager.all, members)
         sorted_members = list(sorted(online_members, key=lambda m: (-m.rank, m.name)))
 
