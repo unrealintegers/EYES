@@ -4,9 +4,9 @@ from datetime import datetime as dt
 from datetime import timedelta as td
 from typing import Optional
 
-import aiocron
 import aiohttp
-from pytz import utc
+from discord.ext import tasks
+
 
 from ..bot import EYESBot, BotTask
 from ..models import WynncraftAPI
@@ -18,14 +18,8 @@ class GuildListUpdater(BotTask):
     def __init__(self, bot: EYESBot):
         super().__init__(bot)
 
-        self.update = aiocron.crontab("0 */3 * * *", func=self._update, start=False, tz=utc)
-
-    async def init(self):
-        # Do one update at the start
-        self.update.call_func()
-        self.update.start()
-
-    async def _update(self):
+    @tasks.loop(hours=3)
+    async def update(self):
         async with aiohttp.ClientSession() as session:
             async with session.get(WynncraftAPI.GUILD_LIST) as response:
                 if not response.ok:
@@ -66,14 +60,13 @@ class GuildUpdater(BotTask):
 
         self.pq = []
 
-        self.next = aiocron.crontab('* * * * * */3', func=self._next, start=False)
-
     async def init(self):
         await self.build_pq()
 
         self.next.start()
 
-    async def _next(self):
+    @tasks.loop(seconds=3)
+    async def next(self):
         if self.pq:  # is not empty
             # We check that it is in fact time to update the smallest item
             if dt.now().timestamp() > self.pq[0][0]:

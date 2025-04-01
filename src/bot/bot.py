@@ -63,23 +63,26 @@ class EYESBot(commands.Bot):
 
     async def add_tasks(self):
         for sub_cls in BotTask.__subclasses__():
-            self.tasks[sub_cls.__name__] = sub_cls(self)
+            instance = sub_cls(self)
+            self.tasks[sub_cls.__name__] = instance
 
-            await self.tasks[sub_cls.__name__].init()
+            await self.add_cog(instance)
+
 
     async def on_ready(self):
         self.logger.info(f"Logged in as {self.user.name}#{self.user.discriminator}")
 
         await self.db.init()
 
-        self.prefixes_manager.start()
-        self.guilds_manager.start()
         self.map_manager.init()
         await self.msg.update_replacements()
+
+        self.players_manager.update.start()
+        self.guilds_manager.update.start()
+        self.prefixes_manager.update.start()
 
         await self.instantiate_commands()
         await self.add_tasks()
 
         await self.tree.sync()
-
         self.logger.info("Synced")

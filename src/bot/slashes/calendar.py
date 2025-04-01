@@ -3,8 +3,8 @@ from datetime import datetime as dt
 from datetime import timedelta
 from datetime import timedelta as td
 
-import aiocron
 import discord.app_commands as slash
+from discord.ext import tasks
 from dateparser import parse as parsedate
 from discord import Interaction
 
@@ -74,9 +74,6 @@ class RemindCommand(SlashCommand, name="remind"):
 
         self.DATE_FORMAT = r"%d/%m/%Y %H:%M:%S"
 
-        self.update = aiocron.crontab("0 * * * *", func=self._update, start=False)
-
-        self.update.call_func()
         self.update.start()
 
     def path(self):
@@ -161,7 +158,8 @@ class RemindCommand(SlashCommand, name="remind"):
 
         self.path().child(reminder_id).child('link').set(response.jump_url)
 
-    async def _update(self):
+    @tasks.loop(minutes=1)
+    async def update(self):
         after_1h = dt.utcnow() + td(hours=1)
 
         if not self.path().get().key():

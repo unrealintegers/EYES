@@ -3,6 +3,7 @@ import typing
 import discord.app_commands as slash
 from discord import Interaction, Permissions
 from discord.app_commands import Choice
+from discord.ext import commands
 
 if typing.TYPE_CHECKING:
     from .bot import EYESBot
@@ -74,12 +75,9 @@ class ContextMenuCommand:
         pass
 
 
-class BotTask:
+class BotTask(commands.Cog):
     def __init__(self, bot: "EYESBot"):
         self.bot = bot
-
-    async def init(self, *args, **kwargs):
-        pass
 
 
 class WynncraftAPI:

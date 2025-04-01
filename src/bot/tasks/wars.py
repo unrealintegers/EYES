@@ -2,9 +2,9 @@ from collections import defaultdict
 from datetime import datetime as dt
 from datetime import timedelta as td
 
-import aiocron
 import aiohttp
 from dateutil.parser import isoparse
+from discord.ext import tasks, commands
 
 from ..bot import BotTask, EYESBot
 from ..managers import ConfigManager
@@ -20,14 +20,8 @@ class WarTracker(BotTask):
 
         self.broadcast_channels = []
 
-        self.update_wars = aiocron.crontab('* * * * * */10', func=self._update_wars, start=False)
-
-    async def init(self):
-        await self.update_channels()
-
-        self.update_wars.start()
-
-    async def update_channels(self):
+    @commands.Cog.listener()
+    async def on_ready(self):
         channels_data = ConfigManager.get_static('warchannels')
         self.broadcast_channels = []
         for g_id, v in channels_data.items():
@@ -100,7 +94,8 @@ class WarTracker(BotTask):
         style_terr = self.get_territory_style(territory, prefix_home)
         return format_string.format(fmt_from, fmt_to, style_terr)
 
-    async def _update_wars(self):
+    @tasks.loop(seconds=10)
+    async def update_wars(self):
         if not self.last_territories:
             self.last_territories = await self.get_territories()
             return

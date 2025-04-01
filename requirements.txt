@@ -4,6 +4,7 @@ requests
 aiohttp[speedups]
 
 aiocron
+pandas
 python-dateutil
 dateparser
 pytz
